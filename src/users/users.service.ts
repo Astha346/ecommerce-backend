@@ -1,44 +1,28 @@
 import { Injectable } from "@nestjs/common";
-
-type User = {
-  id: number;
-  email: string;
-  password: string;
-  username: string;
-};
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { User, UserDocument } from "./user.schema";
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [
-    {
-      id: 1,
-      email: "test@gmail.com",
-      password: "123456",
-      username: "test",
-    },
-  ];
+  constructor(
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
+  ) {}
 
-  // GET all users
-  findAll() {
-    return this.users;
+  // Get all users
+  async findAll() {
+    return this.userModel.find();
   }
 
-  // LOGIN helper (find user by email)
-  findByEmail(email: string) {
-    return this.users.find((user) => user.email === email);
+  // Find user by email
+  async findByEmail(email: string) {
+    return this.userModel.findOne({ email });
   }
 
-  // UPDATE user
-  update(id: string, body: Partial<User>) {
-    this.users = this.users.map((user) =>
-      user.id === Number(id)
-        ? { ...user, ...body }
-        : user
-    );
-
-    return {
-      message: "User updated successfully",
-      updatedUser: this.users.find((u) => u.id === Number(id)),
-    };
+  // Create user
+  async create(userData: Partial<User>) {
+    const user = new this.userModel(userData);
+    return user.save();
   }
 }
