@@ -10,9 +10,4 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  // ✅ ADD THIS
-  @Patch(":id")
-  updateUser(@Param("id") id: string, @Body() body: any) {
-    return this.usersService.update(id, body);
-  }
 }
