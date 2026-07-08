@@ -60,9 +60,13 @@ export class AuthService {
       role: user.role,
     };
 
-    return {
-      token: this.jwtService.sign(payload),
-      user,
-    };
-  }
-}
+   return {
+  access_token: this.jwtService.sign(payload),
+  user: {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+  },
+};
+  }}
