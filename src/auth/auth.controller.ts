@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Get, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "./jwt-auth.guard";
-
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -17,9 +17,15 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-@Get("profile")
-getProfile(@Req() req: any) {
+  @Get("profile")
+  getProfile(@Req() req: any) {
   return req.user;
+}
+@Post("forgot-password")
+forgotPassword(
+  @Body() dto: ForgotPasswordDto,
+) {
+  return this.authService.forgotPassword(dto);
 }
 
 }
