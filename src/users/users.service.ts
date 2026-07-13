@@ -25,4 +25,13 @@ export class UsersService {
     const user = new this.userModel(userData);
     return user.save();
   }
+
+  async findByResetToken(
+  token: string,
+) {
+  return this.userModel.findOne({
+    resetPasswordToken:
+      token,
+  });
+}
 }

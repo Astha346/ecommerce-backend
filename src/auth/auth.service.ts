@@ -1,162 +1,202 @@
- import {
+import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
-     } from "@nestjs/common";
+} from "@nestjs/common";
 
-  import { UsersService } from "../users/users.service";
-  import { JwtService } from "@nestjs/jwt";
+import { UsersService } from "../users/users.service";
+import { JwtService } from "@nestjs/jwt";
 
-  import * as bcrypt from "bcryptjs";
-   import * as crypto from "crypto";
+import * as bcrypt from "bcryptjs";
+import * as crypto from "crypto";
 
-   import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 
-   @Injectable()
-  export class AuthService {
+@Injectable()
+export class AuthService {
   constructor(
-  private usersService: UsersService,
- private jwtService: JwtService,
-   ) {}
+    private usersService: UsersService,
+    private jwtService: JwtService,
+  ) {}
 
-// REGISTER
-   async register(body: any) {
-   const {
-    username,
-   email,
-   password,
+  // REGISTER
+  async register(body: any) {
+    const {
+      username,
+      email,
+      password,
     } = body;
 
-  const existingUser =
-  await this.usersService.findByEmail(
-    email,
-  );
+    const existingUser =
+      await this.usersService.findByEmail(
+        email,
+      );
 
-   if (existingUser) {
-    throw new BadRequestException(
-    "Email already exists",
-  );
+    if (existingUser) {
+      throw new BadRequestException(
+        "Email already exists",
+      );
+    }
+
+    const hashedPassword =
+      await bcrypt.hash(
+        password,
+        10,
+      );
+
+    const user =
+      await this.usersService.create({
+        username,
+        email,
+        password:
+          hashedPassword,
+        role: "customer",
+      });
+
+    return {
+      message:
+        "Registration successful",
+      user,
+    };
   }
 
-  const hashedPassword =
-  await bcrypt.hash(
-    password,
-    10,
-  );
-
-   const user =
-  await this.usersService.create({
-    username,
-    email,
-    password:
-      hashedPassword,
-    role: "customer",
-  });
-
-  return {
-  message:
-    "Registration successful",
-  user,
-};
-
-
-}
-
-// LOGIN
+  // LOGIN
   async login(
- email: string,
- password: string,
+    email: string,
+    password: string,
   ) {
-  const user =
-  await this.usersService.findByEmail(
- email,
- );
+    const user =
+      await this.usersService.findByEmail(
+        email,
+      );
 
+    if (!user) {
+      throw new UnauthorizedException(
+        "User not found",
+      );
+    }
 
-  if (!user) {
-  throw new UnauthorizedException(
-    "User not found",
-  );
-}
+    const isMatch =
+      await bcrypt.compare(
+        password,
+        user.password,
+      );
 
-  const isMatch =
-  await bcrypt.compare(
-    password,
-    user.password,
-  );
+    if (!isMatch) {
+      throw new UnauthorizedException(
+        "Wrong password",
+      );
+    }
 
-   if (!isMatch) {
-  throw new UnauthorizedException(
-    "Wrong password",
-  );
-}
+    const payload = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+    };
 
-  const payload = {
-  _id: user._id,
-  email: user.email,
-  role: user.role,
-};
+    return {
+      access_token:
+        this.jwtService.sign(
+          payload,
+        ),
 
-  return {
-  access_token:
-    this.jwtService.sign(
-      payload,
-    ),
+      user: {
+        id: user._id,
+        username:
+          user.username,
+        email: user.email,
+        role: user.role,
+      },
+    };
+  }
 
-    user: {
-    id: user._id,
-    username:
-      user.username,
-    email: user.email,
-    role: user.role,
-  },
-};
+  // FORGOT PASSWORD
+  async forgotPassword(
+    dto: ForgotPasswordDto,
+  ) {
+    const user =
+      await this.usersService.findByEmail(
+        dto.email,
+      );
 
+    if (!user) {
+      throw new NotFoundException(
+        "User not found",
+      );
+    }
 
-}
+    const token =
+      crypto
+        .randomBytes(32)
+        .toString("hex");
 
-// FORGOT PASSWORD
-async forgotPassword(
-dto: ForgotPasswordDto,
-) {
-const user =
-await this.usersService.findByEmail(
-dto.email,
-);
+    user.resetPasswordToken =
+      token;
 
+    user.resetPasswordExpires =
+      new Date(
+        Date.now() +
+          15 * 60 * 1000,
+      );
 
-if (!user) {
-  throw new NotFoundException(
-    "User not found",
-  );
-}
+    await user.save();
 
-const token =
-  crypto.randomBytes(32)
-    .toString("hex");
+    return {
+      message:
+        "Reset link generated",
 
-user.resetPasswordToken =
-  token;
+      resetLink:
+        `http://localhost:3000/reset-password/${token}`,
+    };
+  }
 
-user.resetPasswordExpires =
-  new Date(
-    Date.now() +
-      15 *
-        60 *
-        1000,
-  );
+  // RESET PASSWORD
+  async resetPassword(
+    token: string,
+    password: string,
+  ) {
+    const user =
+      await this.usersService.findByResetToken(
+        token,
+      );
 
-await user.save();
+    if (!user) {
+      throw new BadRequestException(
+        "Invalid token",
+      );
+    }
 
-return {
-  message:
-    "Reset link generated",
+    if (
+      !user.resetPasswordExpires ||
+      user.resetPasswordExpires <
+        new Date()
+    ) {
+      throw new BadRequestException(
+        "Token expired",
+      );
+    }
 
-  resetLink:
-    `http://localhost:3000/reset-password/${token}`,
-};
+    const hashedPassword =
+      await bcrypt.hash(
+        password,
+        10,
+      );
 
+    user.password =
+      hashedPassword;
 
-}
+    user.resetPasswordToken =
+      undefined;
+
+    user.resetPasswordExpires =
+      undefined;
+
+    await user.save();
+
+    return {
+      message:
+        "Password reset successful",
+    };
+  }
 }
