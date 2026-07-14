@@ -22,7 +22,7 @@ export class User {
   resetPasswordExpires?: Date;
 
   @Prop({
-    enum: ["customer", "admin"],
+    enum: ["customer", "admin" , "manager", "staff"],
     default: "customer",
   })
   role!: string;

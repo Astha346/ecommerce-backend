@@ -26,6 +26,7 @@ export class AuthService {
       username,
       email,
       password,
+      role,
     } = body;
 
     const existingUser =
@@ -51,7 +52,7 @@ export class AuthService {
         email,
         password:
           hashedPassword,
-        role: "customer",
+        role: role || "customer",
       });
 
     return {
