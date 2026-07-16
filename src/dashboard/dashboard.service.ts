@@ -32,9 +32,13 @@ export class DashboardService {
       });
 
     return {
-      totalOrders,
-      totalProducts,
-      totalCustomers,
+      totalSales: totalOrders,
+     revenue: 0,
+     totalOrders,
+     totalCustomers,
+     totalProducts,
+     pendingOrders: 0,
+     lowStockProducts: 0,
     };
   }
 }
