@@ -7,8 +7,34 @@ export class DashboardController {
     private readonly dashboardService: DashboardService,
   ) {}
 
-  @Get('stats')
+  @Get("stats")
   getStats() {
     return this.dashboardService.getStats();
+  }
+
+
+  @Get("sales-by-month")
+   getSalesByMonth() {
+  return this.dashboardService.getSalesByMonth();
+}
+
+ @Get("revenue-by-month")
+getRevenueByMonth() {
+  return this.dashboardService.getRevenueByMonth();
+}
+
+@Get("orders-by-status")
+  getOrdersByStatus() {
+    return this.dashboardService.getOrdersByStatus();
+  }
+
+  @Get("customer-growth")
+  getCustomerGrowth() {
+    return this.dashboardService.getCustomerGrowth();
+  }
+
+  @Get("category-sales")
+  getCategorySales() {
+    return this.dashboardService.getCategorySales();
   }
 }
