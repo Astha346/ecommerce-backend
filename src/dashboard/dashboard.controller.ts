@@ -28,13 +28,20 @@ getRevenueByMonth() {
     return this.dashboardService.getOrdersByStatus();
   }
 
-  @Get("customer-growth")
-  getCustomerGrowth() {
-    return this.dashboardService.getCustomerGrowth();
-  }
-
+ 
   @Get("category-sales")
   getCategorySales() {
     return this.dashboardService.getCategorySales();
   }
+
+  @Get("top-products")
+getTopProducts() {
+  return this.dashboardService.getTopProducts();
+}
+
+
+@Get("recent-orders")
+getRecentOrders() {
+  return this.dashboardService.getRecentOrders();
+}
 }
