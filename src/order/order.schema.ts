@@ -18,6 +18,7 @@ export class OrderItem {
 
   @Prop()
   quantity!: number;
+
 }
 
 export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);
@@ -34,8 +35,21 @@ export class Order {
   @Prop({ default: 0 })
   total!: number;
 
-  @Prop({ default: "pending" })
-  status!: string;
+  @Prop({
+  default: "pending",
+  enum: [
+    "pending",
+    "processing",
+    "shipped",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+    "returned",
+    "refunded",
+  ],
+})
+status!: string;
+
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

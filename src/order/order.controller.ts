@@ -1,11 +1,22 @@
-import { Controller, Post, Body, Get, Param } from "@nestjs/common";
+import { Controller, Post, Body, Get, Param, Patch } from "@nestjs/common";
 import { OrderService } from "./order.service";
 
-@Controller("order")
+@Controller("orders")
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  // create order directly (optional use)
+  @Patch(":id/status")
+updateStatus(
+  @Param("id") id: string,
+  @Body("status") status: string,
+) {
+  return this.orderService.updateStatus(
+    id,
+    status,
+  );
+}
+
+  // create order direct
   @Post("create")
   create(@Body() body: any) {
     return this.orderService.create(body);
