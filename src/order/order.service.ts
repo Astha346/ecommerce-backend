@@ -49,4 +49,14 @@ export class OrderService {
 
     return order;
   }
+     async updateStatus(
+    id: string,
+    status: string,
+  ) {
+    return this.orderModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true },
+    );
+  }
 }
