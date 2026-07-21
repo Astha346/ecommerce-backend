@@ -126,37 +126,7 @@ export class DashboardService {
     ]);
   }
 
-
-  // Customer growth monthly
-  async getCustomerGrowth() {
-    return this.userModel.aggregate([
-      {
-        $match: {
-          role: "customer",
-        },
-      },
-      {
-        $group: {
-          _id: {
-            month: {
-              $month: "$createdAt",
-            },
-          },
-          customers: {
-            $sum: 1,
-          },
-        },
-      },
-      {
-        $sort: {
-          "_id.month": 1,
-        },
-      },
-    ]);
-  }
-
-
-  // Sales by product category
+   // Sales by product category
 async getCategorySales() {
   return this.orderModel.aggregate([
     {
@@ -173,6 +143,64 @@ async getCategorySales() {
     {
       $sort: {
         sales: -1,
+      },
+    },
+  ]);
+}
+
+// Top selling products
+async getTopProducts() {
+  return this.orderModel.aggregate([
+    {
+      $unwind: "$items",
+    },
+    {
+      $group: {
+        _id: "$items.productId",
+
+        name: {
+          $first: "$items.name",
+        },
+
+        image: {
+          $first: "$items.image",
+        },
+
+        sold: {
+          $sum: "$items.quantity",
+        },
+      },
+    },
+    {
+      $sort: {
+        sold: -1,
+      },
+    },
+    {
+      $limit: 5,
+    },
+  ]);
+}
+
+
+// Recent orders
+async getRecentOrders() {
+  return this.orderModel.aggregate([
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+    {
+      $limit: 5,
+    },
+    {
+      $project: {
+        orderId: 1,
+        customer: 1,
+        total: 1,
+        status: 1,
+        createdAt: 1,
       },
     },
   ]);
