@@ -33,4 +33,9 @@ updateStatus(
   findAll(@Param("userId") userId: string) {
     return this.orderService.findAll(userId);
   }
+
+  @Get()
+  getallOrders(){
+    return this.orderService.getAllOrders();
+  }
 }

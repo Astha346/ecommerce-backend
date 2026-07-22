@@ -196,8 +196,9 @@ async getRecentOrders() {
     },
     {
       $project: {
-        orderId: 1,
-        customer: 1,
+        _id: 1,
+        customerName: 1,
+        userId: 1,
         total: 1,
         status: 1,
         createdAt: 1,
