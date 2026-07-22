@@ -32,9 +32,9 @@ export class DashboardService {
         role: "customer",
       });
 
-    const pendingOrders =
+    const PendingOrders =
       await this.orderModel.countDocuments({
-        status: "pending",
+        status: "Pending",
       });
 
     const revenueResult =
@@ -58,7 +58,7 @@ export class DashboardService {
       totalOrders,
       totalCustomers,
       totalProducts,
-      pendingOrders,
+      PendingOrders,
       lowStockProducts: 0,
     };
   }
