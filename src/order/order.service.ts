@@ -81,7 +81,7 @@ export class OrderService {
       }),
     ),
     total,
-    status: "pending",
+    status: "Pending",
   });
     return order;
   }
