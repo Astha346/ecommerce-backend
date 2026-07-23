@@ -104,4 +104,7 @@ export class OrderService {
       { new: true },
     );
   }
+  async deleteOrder(id: string) {
+  return this.orderModel.findByIdAndDelete(id);
+}
 }

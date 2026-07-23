@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Patch } from "@nestjs/common";
+import { Controller, Post, Body, Get, Param, Patch, Delete, } from "@nestjs/common";
 import { OrderService } from "./order.service";
 
 @Controller("orders")
@@ -14,6 +14,11 @@ updateStatus(
     id,
     status,
   );
+  
+}
+ @Delete(":id")
+deleteOrder(@Param("id") id: string) {
+  return this.orderService.deleteOrder(id);
 }
 
   // create order direct
