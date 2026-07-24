@@ -8,6 +8,9 @@ import { AnalyticsModule } from "./analytics/analytics.module";
 import { ProductsModule } from "./products/products.module";
 import { AuthModule } from "./auth/auth.module"; 
 import { DashboardModule } from './dashboard/dashboard.module';
+import { RolesModule } from './roles/roles.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { RolePermissionsModule } from './role-permissions/role-permissions.module';
 
 @Module({
   imports: [
@@ -34,6 +37,9 @@ import { DashboardModule } from './dashboard/dashboard.module';
     ProductsModule,
     AuthModule,
     DashboardModule,
+    RolesModule,
+    PermissionsModule,
+    RolePermissionsModule,
   ],
 })
 export class AppModule {}
