@@ -12,12 +12,14 @@ import * as bcrypt from "bcryptjs";
 import * as crypto from "crypto";
 
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { RolesService } from "../roles/roles.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private rolesService: RolesService,
   ) {}
 
   // REGISTER
@@ -46,15 +48,20 @@ export class AuthService {
         10,
       );
 
-    const user =
-      await this.usersService.create({
-        username,
-        email,
-        password:
-          hashedPassword,
-        role: role || "customer",
-      });
+    const roleName = role || "customer";
 
+    const roleData = await this.rolesService.findByName(roleName);
+
+    if (!roleData) {
+    throw new BadRequestException("Invalid role");
+     }
+
+  const user = await this.usersService.create({
+  username,
+  email,
+  password: hashedPassword,
+  role: roleData._id,
+   });
     return {
       message:
         "Registration successful",
@@ -90,28 +97,25 @@ export class AuthService {
       );
     }
 
-    const payload = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
+    const role = user.role as any;
 
-    return {
-      access_token:
-        this.jwtService.sign(
-          payload,
-        ),
+const payload = {
+  id: user.id,
+  email: user.email,
+  roleId: role._id,
+  role: role.name,
+};
 
-      user: {
-        id: user.id,
-        username:
-          user.username,
-        email: user.email,
-        role: user.role,
-      },
-    };
-  }
-
+return {
+  access_token: this.jwtService.sign(payload),
+    user: {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: role.name,
+  },
+   }
+  };
   // FORGOT PASSWORD
   async forgotPassword(
     dto: ForgotPasswordDto,
