@@ -10,9 +10,17 @@ import {
 } from "@nestjs/common";
 import { ProductsService } from "./products.service";
 
+import { UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { PermissionsGuard } from "../auth/guards/permissions.guard";
+import { Permissions } from "../auth/decorators/permissions.decorator";
+
 @Controller("products")
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions("products.view")
 
   // GET ALL PRODUCTS
   @Get()

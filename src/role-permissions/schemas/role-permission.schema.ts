@@ -24,3 +24,8 @@ export class RolePermission {
 
 export const RolePermissionSchema =
   SchemaFactory.createForClass(RolePermission);
+
+RolePermissionSchema.index(
+  { role: 1, permission: 1 },
+  { unique: true },
+);
