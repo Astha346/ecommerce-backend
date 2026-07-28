@@ -14,6 +14,10 @@ export class RolePermissionsService {
     private rolePermissionModel: Model<RolePermissionDocument>,
   ) {}
 
+   async create(data: any) {
+  return this.rolePermissionModel.create(data);
+}
+
   async getPermissionsByRole(roleId: string) {
     return this.rolePermissionModel
       .find({ role: roleId })
