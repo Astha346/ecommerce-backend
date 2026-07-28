@@ -12,14 +12,18 @@ export class UsersService {
 
   // Get all users
   async findAll() {
-    return this.userModel.find();
+  return this.userModel
+    .find()
+    .populate("role");
+    
   }
 
   // Find user by email
   async findByEmail(email: string) {
-    return this.userModel.findOne({ email });
-  }
-
+  return this.userModel
+    .findOne({ email })
+    .populate("role");
+}
   // Create user
   async create(userData: Partial<User>) {
     const user = new this.userModel(userData);

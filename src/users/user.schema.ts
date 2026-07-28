@@ -1,11 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export type UserDocument = User & Document;
 
 @Schema()
 export class User {
-
   @Prop({ required: true })
   username!: string;
 
@@ -22,10 +21,11 @@ export class User {
   resetPasswordExpires?: Date;
 
   @Prop({
-    enum: ["customer", "admin" , "manager", "staff"],
-    default: "customer",
+    type: Types.ObjectId,
+    ref: "Role",
+    required: true,
   })
-  role!: string;
+  role!: Types.ObjectId;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
