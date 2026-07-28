@@ -7,12 +7,15 @@ import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./jwt.strategy";
 
 import { UsersModule } from "../users/users.module";
-import { RolesModule } from "../roles/roles.module"; // ✅ Add this
+import { RolesModule } from "../roles/roles.module";
+import { RolePermissionsModule } from "../role-permissions/role-permissions.module";
+import { PermissionsGuard } from "./guards/permissions.guard";
 
 @Module({
   imports: [
     UsersModule,
-    RolesModule, // ✅ Add this
+    RolesModule,
+    RolePermissionsModule,
 
     PassportModule.register({
       defaultStrategy: "jwt",
@@ -31,6 +34,7 @@ import { RolesModule } from "../roles/roles.module"; // ✅ Add this
   providers: [
     AuthService,
     JwtStrategy,
+    PermissionsGuard,
   ],
 
   exports: [
