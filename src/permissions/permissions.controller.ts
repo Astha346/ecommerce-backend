@@ -1,4 +1,26 @@
-import { Controller } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+} from "@nestjs/common";
 
-@Controller('permissions')
-export class PermissionsController {}
+import { PermissionsService } from "./permissions.service";
+
+@Controller("permissions")
+export class PermissionsController {
+
+  constructor(
+    private readonly permissionsService: PermissionsService,
+  ) {}
+
+  @Post()
+  create(@Body() body: any) {
+    return this.permissionsService.create(body);
+  }
+
+  @Get()
+  findAll() {
+    return this.permissionsService.findAll();
+  }
+}
