@@ -19,8 +19,7 @@ import { Permissions } from "../auth/decorators/permissions.decorator";
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions("products.view")
+  
 
   // GET ALL PRODUCTS
   @Get()

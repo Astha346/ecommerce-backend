@@ -10,7 +10,7 @@ import { JwtService } from "@nestjs/jwt";
 
 import * as bcrypt from "bcryptjs";
 import * as crypto from "crypto";
-
+import { RolePermissionsService } from "../role-permissions/role-permissions.service";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { RolesService } from "../roles/roles.service";
 
@@ -20,6 +20,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private rolesService: RolesService,
+    private rolePermissionsService : RolePermissionsService,
   ) {}
 
   // REGISTER
@@ -98,6 +99,19 @@ export class AuthService {
     }
 
     const role = user.role as any;
+    const rolePermissions =
+    await this.rolePermissionsService.getPermissionsByRole(
+    role._id.toString(),
+  );
+
+  const permissions = rolePermissions.map(
+  (rp: any) => rp.permission.name,
+);
+
+   console.log("ROLE =", role);
+console.log("ROLE ID =", role._id);
+console.log("ROLE NAME =", role.name);
+console.log("PERMISSIONS =", permissions);
 
 const payload = {
   id: user.id,
@@ -113,6 +127,7 @@ return {
     username: user.username,
     email: user.email,
     role: role.name,
+    permissions,
   },
    }
   };
