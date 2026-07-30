@@ -19,6 +19,9 @@ export class Product {
 
   @Prop()
   description?: string;
+
+  @Prop({ required: true })
+stock!: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
