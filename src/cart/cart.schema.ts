@@ -9,7 +9,7 @@ export class Cart {
   userId!: string;
 
   @Prop({ required: true })
-  productId!: number;
+  productId!: string;
 
   @Prop({ required: true })
   name!: string;
