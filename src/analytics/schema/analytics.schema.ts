@@ -6,7 +6,7 @@ export type AnalyticsDocument = Analytics & Document;
 @Schema()
 export class Analytics {
   @Prop({ required: true })
-  productId!: number;
+  productId!: string;
 
   @Prop({ default: 0 })
   clicks!: number;

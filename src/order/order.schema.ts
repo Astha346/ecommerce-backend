@@ -6,7 +6,7 @@ import { Type } from "class-transformer";
 export class OrderItem {
 
   @Prop()
-  productId!: number;
+  productId!: string;
 
 
   @Prop()
