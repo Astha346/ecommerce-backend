@@ -6,8 +6,8 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Post("click")
-  trackClick(@Body() body: { productId: number }) {
-    console.log("CLICK RECEIVED:", body); // debugging line
+  trackClick(@Body() body: { productId: string }) {
+    console.log("CLICK RECEIVED:", body); 
 
     return this.analyticsService.trackClick(body.productId);
   }
