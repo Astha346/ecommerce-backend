@@ -10,7 +10,7 @@ export class AnalyticsService {
     private analyticsModel: Model<Analytics>
   ) {}
 
-  async trackClick(productId: number) {
+  async trackClick(productId: string) {
     return this.analyticsModel.findOneAndUpdate(
       { productId },
       { $inc: { clicks: 1 } },
