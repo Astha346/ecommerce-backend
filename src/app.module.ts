@@ -11,6 +11,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolePermissionsModule } from './role-permissions/role-permissions.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { RolePermissionsModule } from './role-permissions/role-permissions.modul
     RolesModule,
     PermissionsModule,
     RolePermissionsModule,
+    CategoryModule,
   ],
 })
 export class AppModule {}
