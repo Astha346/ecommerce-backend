@@ -27,6 +27,12 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
+  // GET PRODUCTS GROUPED BY CATEGORY
+  @Get("by-category")
+  getProductsByCategory() {
+  return this.productsService.getProductsByCategory();
+}
+
   // GET SINGLE PRODUCT
   @Get(":id")
   findOne(@Param("id") id: string) {

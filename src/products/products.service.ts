@@ -40,9 +40,32 @@ export class ProductsService {
     if (!q) {
       return [];
     }
+    
 
     return this.productModel.find({
       name: { $regex: q, $options: "i" }
     }).limit(5);
   }
+  async getProductsByCategory() {
+  const products = await this.productModel.find().lean();
+
+  const grouped: Record<string, any[]> = {};
+
+  for (const product of products) {
+    const categoryName = product.category?.trim();
+
+    if (!categoryName) {
+      continue;
+    }
+
+    if (!grouped[categoryName]) {
+      grouped[categoryName] = [];
+    }
+
+    grouped[categoryName].push(product);
+  }
+
+  return grouped;
+}
+  
 }
