@@ -10,20 +10,29 @@ import { JwtService } from "@nestjs/jwt";
 
 import * as bcrypt from "bcryptjs";
 import * as crypto from "crypto";
+
 import { RolePermissionsService } from "../role-permissions/role-permissions.service";
+
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+
 import { RolesService } from "../roles/roles.service";
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
-    private rolesService: RolesService,
-    private rolePermissionsService : RolePermissionsService,
+    private readonly usersService: UsersService,
+
+    private readonly jwtService: JwtService,
+
+    private readonly rolesService: RolesService,
+
+    private readonly rolePermissionsService: RolePermissionsService,
   ) {}
 
+  // =====================================================
   // REGISTER
+  // =====================================================
+
   async register(body: any) {
     const {
       username,
@@ -32,10 +41,9 @@ export class AuthService {
       role,
     } = body;
 
+    // Check existing email
     const existingUser =
-      await this.usersService.findByEmail(
-        email,
-      );
+      await this.usersService.findByEmail(email);
 
     if (existingUser) {
       throw new BadRequestException(
@@ -43,49 +51,73 @@ export class AuthService {
       );
     }
 
+    // Hash password
     const hashedPassword =
-      await bcrypt.hash(
-        password,
-        10,
+      await bcrypt.hash(password, 10);
+
+    // Default role
+    const roleName =
+      role || "customer";
+
+    // Find role from Roles collection
+    const roleData =
+      await this.rolesService.findByName(
+        roleName,
       );
 
-    const roleName = role || "customer";
-
-    const roleData = await this.rolesService.findByName(roleName);
-
     if (!roleData) {
-    throw new BadRequestException("Invalid role");
-     }
+      throw new BadRequestException(
+        `Invalid role: ${roleName}`,
+      );
+    }
 
-  const user = await this.usersService.create({
-  username,
-  email,
-  password: hashedPassword,
-  role: roleData._id,
-   });
+    // Create user
+    const user =
+      await this.usersService.create({
+        username,
+        email,
+        password: hashedPassword,
+
+        // IMPORTANT
+        // Save Role ObjectId
+        role: roleData._id,
+      });
+
     return {
       message:
         "Registration successful",
-      user,
+
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: roleData.name,
+      },
     };
   }
 
+  // =====================================================
   // LOGIN
+  // =====================================================
+
   async login(
     email: string,
     password: string,
   ) {
+    // Find user
     const user =
       await this.usersService.findByEmail(
         email,
       );
 
+    // User does not exist
     if (!user) {
       throw new UnauthorizedException(
-        "User not found",
+        "Invalid email or password",
       );
     }
 
+    // Check password
     const isMatch =
       await bcrypt.compare(
         password,
@@ -94,44 +126,122 @@ export class AuthService {
 
     if (!isMatch) {
       throw new UnauthorizedException(
-        "Wrong password",
+        "Invalid email or password",
       );
     }
 
+    // =================================================
+    // CHECK ROLE
+    // =================================================
+
     const role = user.role as any;
+
+    // If populate("role") failed
+    if (!role) {
+      throw new UnauthorizedException(
+        "User does not have a valid role",
+      );
+    }
+
+    // Check populated role
+    if (
+      !role._id ||
+      !role.name
+    ) {
+      throw new UnauthorizedException(
+        "User does not have a valid role",
+      );
+    }
+
+    console.log(
+      "LOGIN USER =",
+      user.email,
+    );
+
+    console.log(
+      "ROLE ID =",
+      role._id,
+    );
+
+    console.log(
+      "ROLE NAME =",
+      role.name,
+    );
+
+    
+    // GET ROLE PERMISSIONS
+  
+
     const rolePermissions =
-    await this.rolePermissionsService.getPermissionsByRole(
-    role._id.toString(),
-  );
+      await this.rolePermissionsService
+        .getPermissionsByRole(
+          role._id.toString(),
+        );
 
-  const permissions = rolePermissions.map(
-  (rp: any) => rp.permission.name,
-);
+    
+    // GET PERMISSION NAMES
+    
 
-   console.log("ROLE =", role);
-console.log("ROLE ID =", role._id);
-console.log("ROLE NAME =", role.name);
-console.log("PERMISSIONS =", permissions);
+    const permissions =
+      rolePermissions
+        .filter(
+          (rp: any) =>
+            rp.permission,
+        )
+        .map(
+          (rp: any) =>
+            rp.permission.name,
+        );
 
-const payload = {
-  id: user.id,
-  email: user.email,
-  roleId: role._id,
-  role: role.name,
-};
+    console.log(
+      "PERMISSIONS =",
+      permissions,
+    );
 
-return {
-  access_token: this.jwtService.sign(payload),
-    user: {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    role: role.name,
-    permissions,
-  },
-   }
-  };
+    
+    // JWT PAYLOAD
+    
+
+    const payload = {
+      id: user._id.toString(),
+
+      email: user.email,
+
+      roleId:
+        role._id.toString(),
+
+      role: role.name,
+    };
+
+    
+    // RETURN LOGIN RESPONSE
+    
+
+    return {
+      access_token:
+        this.jwtService.sign(payload),
+
+      user: {
+        id: user._id.toString(),
+
+        username:
+          user.username,
+
+        email:
+          user.email,
+
+        role:
+          role.name,
+
+        permissions,
+      },
+    };
+  }
+
+  
   // FORGOT PASSWORD
+  
+
   async forgotPassword(
     dto: ForgotPasswordDto,
   ) {
@@ -146,6 +256,7 @@ return {
       );
     }
 
+    // Generate token
     const token =
       crypto
         .randomBytes(32)
@@ -172,6 +283,7 @@ return {
   }
 
   // RESET PASSWORD
+  
   async resetPassword(
     token: string,
     password: string,
@@ -197,6 +309,7 @@ return {
       );
     }
 
+    // Hash new password
     const hashedPassword =
       await bcrypt.hash(
         password,
