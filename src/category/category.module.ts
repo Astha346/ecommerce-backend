@@ -1,9 +1,17 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 
+import {
+  Category,
+  CategorySchema,
+} from "./category.schema";
+
 import { CategoryController } from "./category.controller";
 import { CategoryService } from "./category.service";
-import { Category, CategorySchema } from "./category.schema";
+
+import {
+  RolePermissionsModule,
+} from "../role-permissions/role-permissions.module";
 
 @Module({
   imports: [
@@ -13,9 +21,16 @@ import { Category, CategorySchema } from "./category.schema";
         schema: CategorySchema,
       },
     ]),
+
+    RolePermissionsModule,
   ],
-  controllers: [CategoryController],
-  providers: [CategoryService],
-  exports: [CategoryService],
+
+  controllers: [
+    CategoryController,
+  ],
+
+  providers: [
+    CategoryService,
+  ],
 })
 export class CategoryModule {}

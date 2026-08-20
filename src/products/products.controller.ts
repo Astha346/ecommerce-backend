@@ -7,59 +7,128 @@ import {
   Delete,
   Patch,
   Query,
+  UseGuards,
 } from "@nestjs/common";
+
 import { ProductsService } from "./products.service";
 
-import { UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { PermissionsGuard } from "../auth/guards/permissions.guard";
 import { Permissions } from "../auth/decorators/permissions.decorator";
 
 @Controller("products")
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+  ) {}
 
-  
-
+  // ==========================================
   // GET ALL PRODUCTS
+  // ==========================================
+
   @Get()
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+  )
+  @Permissions("products.view")
   findAll() {
     return this.productsService.findAll();
   }
 
-  // GET PRODUCTS GROUPED BY CATEGORY
-  @Get("by-category")
-  getProductsByCategory() {
-  return this.productsService.getProductsByCategory();
-}
+  // ==========================================
+  // GET PRODUCTS BY CATEGORY
+  // ==========================================
 
+  @Get("by-category")
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+  )
+  @Permissions("products.view")
+  getProductsByCategory() {
+    return this.productsService.getProductsByCategory();
+  }
+
+  // ==========================================
+  // SEARCH SUGGESTIONS
+  // ==========================================
+
+  @Get("suggestions")
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+  )
+  @Permissions("products.view")
+  getSuggestions(
+    @Query("q") q: string,
+  ) {
+    return this.productsService.getSuggestions(q);
+  }
+
+  // ==========================================
   // GET SINGLE PRODUCT
+  // ==========================================
+
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+  )
+  @Permissions("products.view")
+  findOne(
+    @Param("id") id: string,
+  ) {
     return this.productsService.findOne(id);
   }
 
+  // ==========================================
   // CREATE PRODUCT
+  // ==========================================
+
   @Post()
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+  )
+  @Permissions("products.create")
   create(@Body() body: any) {
     return this.productsService.create(body);
   }
 
-  // DELETE PRODUCT
-  @Delete(":id")
-  delete(@Param("id") id: string) {
-    return this.productsService.delete(id);
-  }
-
+  // ==========================================
   // UPDATE PRODUCT
+  // ==========================================
+
   @Patch(":id")
-  update(@Param("id") id: string, @Body() body: any) {
-    return this.productsService.update(id, body);
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+  )
+  @Permissions("products.update")
+  update(
+    @Param("id") id: string,
+    @Body() body: any,
+  ) {
+    return this.productsService.update(
+      id,
+      body,
+    );
   }
 
-  // 🔍 SEARCH SUGGESTIONS (IMPORTANT FOR YOUR AUTOCOMPLETE)
-  @Get("suggestions")
-  getSuggestions(@Query("q") q: string) {
-    return this.productsService.getSuggestions(q);
+  // ==========================================
+  // DELETE PRODUCT
+  // ==========================================
+
+  @Delete(":id")
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+  )
+  @Permissions("products.delete")
+  delete(
+    @Param("id") id: string,
+  ) {
+    return this.productsService.delete(id);
   }
 }
