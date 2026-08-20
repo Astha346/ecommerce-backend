@@ -11,16 +11,27 @@ import {
 export class RolePermissionsService {
   constructor(
     @InjectModel(RolePermission.name)
-    private rolePermissionModel: Model<RolePermissionDocument>,
+    private readonly rolePermissionModel: Model<RolePermissionDocument>,
   ) {}
 
-   async create(data: any) {
-  return this.rolePermissionModel.create(data);
-}
+  // Create one role permission
+  async create(data: any) {
+    return this.rolePermissionModel.create(data);
+  }
 
+  // Get all permissions of a role
   async getPermissionsByRole(roleId: string) {
     return this.rolePermissionModel
-      .find({ role: roleId })
+      .find({
+        role: roleId,
+      })
       .populate("permission");
+  }
+
+  // Delete all permissions of a role
+  async deleteByRole(roleId: string) {
+    return this.rolePermissionModel.deleteMany({
+      role: roleId,
+    });
   }
 }
