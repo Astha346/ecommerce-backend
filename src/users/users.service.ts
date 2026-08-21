@@ -22,7 +22,10 @@ export class UsersService {
     private userModel: Model<UserDocument>,
   ) {}
 
-  // Get all users
+  // ==========================================
+  // GET ALL USERS
+  // ==========================================
+
   async findAll() {
     return this.userModel
       .find()
@@ -30,27 +33,74 @@ export class UsersService {
       .exec();
   }
 
-  // Find user by email
-  async findByEmail(email: string) {
+  // ==========================================
+  // FIND USER BY EMAIL
+  // ==========================================
+
+  async findByEmail(
+    email: string,
+  ) {
     return this.userModel
-      .findOne({ email })
+      .findOne({
+        email,
+      })
       .populate("role")
       .exec();
   }
 
-  // Create user
-  async create(userData: Partial<User>) {
+  // ==========================================
+  // CREATE USER
+  // ==========================================
+
+  async create(
+    userData: Partial<User>,
+  ) {
     const user =
       new this.userModel(userData);
 
     return user.save();
   }
 
-  // Find user by reset password token
-  async findByResetToken(token: string) {
+  // ==========================================
+  // FIND USER BY ID
+  // ==========================================
+
+  async findById(
+    id: string,
+  ) {
+    return this.userModel
+      .findById(id)
+      .populate("role")
+      .exec();
+  }
+
+  // ==========================================
+  // FIND USER BY REFRESH TOKEN
+  // ==========================================
+
+  async findByRefreshToken(
+    refreshToken: string,
+  ) {
     return this.userModel
       .findOne({
-        resetPasswordToken: token,
+        refreshToken:
+          refreshToken,
+      })
+      .populate("role")
+      .exec();
+  }
+
+  // ==========================================
+  // FIND USER BY RESET TOKEN
+  // ==========================================
+
+  async findByResetToken(
+    token: string,
+  ) {
+    return this.userModel
+      .findOne({
+        resetPasswordToken:
+          token,
       })
       .exec();
   }

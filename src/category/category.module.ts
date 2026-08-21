@@ -9,9 +9,8 @@ import {
 import { CategoryController } from "./category.controller";
 import { CategoryService } from "./category.service";
 
-import {
-  RolePermissionsModule,
-} from "../role-permissions/role-permissions.module";
+import { RolePermissionsModule } from "../role-permissions/role-permissions.module";
+import { PermissionsModule } from "../permissions/permissions.module";
 
 @Module({
   imports: [
@@ -23,6 +22,7 @@ import {
     ]),
 
     RolePermissionsModule,
+    PermissionsModule,
   ],
 
   controllers: [

@@ -1,24 +1,50 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types } from "mongoose";
+import {
+  Prop,
+  Schema,
+  SchemaFactory,
+} from "@nestjs/mongoose";
 
-export type UserDocument = User & Document;
+import {
+  Document,
+  Types,
+} from "mongoose";
+
+export type UserDocument =
+  User & Document;
 
 @Schema()
 export class User {
-  @Prop({ required: true })
+  // =====================================================
+  // USERNAME
+  // =====================================================
+
+  @Prop({
+    required: true,
+  })
   username!: string;
 
-  @Prop({ required: true, unique: true })
+  // =====================================================
+  // EMAIL
+  // =====================================================
+
+  @Prop({
+    required: true,
+    unique: true,
+  })
   email!: string;
 
-  @Prop({ required: true })
+  // =====================================================
+  // PASSWORD
+  // =====================================================
+
+  @Prop({
+    required: true,
+  })
   password!: string;
 
-  @Prop()
-  resetPasswordToken?: string;
-
-  @Prop()
-  resetPasswordExpires?: Date;
+  // =====================================================
+  // ROLE
+  // =====================================================
 
   @Prop({
     type: Types.ObjectId,
@@ -26,6 +52,47 @@ export class User {
     required: true,
   })
   role!: Types.ObjectId;
+
+  // =====================================================
+  // REFRESH TOKEN
+  // =====================================================
+
+  @Prop({
+    type: String,
+    default: null,
+  })
+  refreshToken?: string | null;
+
+  // =====================================================
+  // REFRESH TOKEN EXPIRY
+  // =====================================================
+
+  @Prop({
+    type: Date,
+    default: null,
+  })
+  refreshTokenExpires?: Date | null;
+
+  // =====================================================
+  // FORGOT PASSWORD TOKEN
+  // =====================================================
+
+  @Prop({
+    type: String,
+    default: null,
+  })
+  resetPasswordToken?: string | null;
+
+  // =====================================================
+  // FORGOT PASSWORD TOKEN EXPIRY
+  // =====================================================
+
+  @Prop({
+    type: Date,
+    default: null,
+  })
+  resetPasswordExpires?: Date | null;
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema =
+  SchemaFactory.createForClass(User);
