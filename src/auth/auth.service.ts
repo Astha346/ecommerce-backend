@@ -59,7 +59,7 @@ export class AuthService {
     const roleName =
       role || "customer";
 
-    // Find role from Roles collection
+    // Find role
     const roleData =
       await this.rolesService.findByName(
         roleName,
@@ -77,9 +77,6 @@ export class AuthService {
         username,
         email,
         password: hashedPassword,
-
-        // IMPORTANT
-        // Save Role ObjectId
         role: roleData._id,
       });
 
@@ -110,7 +107,6 @@ export class AuthService {
         email,
       );
 
-    // User does not exist
     if (!user) {
       throw new UnauthorizedException(
         "Invalid email or password",
@@ -136,14 +132,12 @@ export class AuthService {
 
     const role = user.role as any;
 
-    // If populate("role") failed
     if (!role) {
       throw new UnauthorizedException(
         "User does not have a valid role",
       );
     }
 
-    // Check populated role
     if (
       !role._id ||
       !role.name
@@ -168,9 +162,9 @@ export class AuthService {
       role.name,
     );
 
-    
+    // =================================================
     // GET ROLE PERMISSIONS
-  
+    // =================================================
 
     const rolePermissions =
       await this.rolePermissionsService
@@ -178,9 +172,9 @@ export class AuthService {
           role._id.toString(),
         );
 
-    
+    // =================================================
     // GET PERMISSION NAMES
-    
+    // =================================================
 
     const permissions =
       rolePermissions
@@ -198,9 +192,9 @@ export class AuthService {
       permissions,
     );
 
-    
-    // JWT PAYLOAD
-    
+    // =================================================
+    // ACCESS TOKEN PAYLOAD
+    // =================================================
 
     const payload = {
       id: user._id.toString(),
@@ -213,13 +207,53 @@ export class AuthService {
       role: role.name,
     };
 
-    
-    // RETURN LOGIN RESPONSE
-    
+    // =================================================
+    // CREATE ACCESS TOKEN
+    // =================================================
+
+    const accessToken =
+      this.jwtService.sign(
+        payload,
+        {
+          expiresIn: "15m",
+        },
+      );
+
+    // =================================================
+    // CREATE REFRESH TOKEN
+    // =================================================
+
+    const refreshToken =
+      crypto
+        .randomBytes(64)
+        .toString("hex");
+
+    // Refresh token valid for 7 days
+    const refreshTokenExpires =
+      new Date(
+        Date.now() +
+          7 * 24 * 60 * 60 * 1000,
+      );
+
+    // Save refresh token in MongoDB
+    user.refreshToken =
+      refreshToken;
+
+    user.refreshTokenExpires =
+      refreshTokenExpires;
+
+    await user.save();
+
+    // =================================================
+    // LOGIN RESPONSE
+    // =================================================
 
     return {
       access_token:
-        this.jwtService.sign(payload),
+        accessToken,
+
+      refresh_token:
+        refreshToken,
 
       user: {
         id: user._id.toString(),
@@ -238,9 +272,203 @@ export class AuthService {
     };
   }
 
-  
+  // =====================================================
+  // REFRESH ACCESS TOKEN
+  // =====================================================
+
+  async refreshToken(
+    refreshToken: string,
+  ) {
+    // Check refresh token
+    if (!refreshToken) {
+      throw new UnauthorizedException(
+        "Refresh token required",
+      );
+    }
+
+    // Find user by refresh token
+    const user =
+      await this.usersService.findByRefreshToken(
+        refreshToken,
+      );
+
+    if (!user) {
+      throw new UnauthorizedException(
+        "Invalid refresh token",
+      );
+    }
+
+    // =================================================
+    // CHECK EXPIRATION
+    // =================================================
+
+    if (
+      !user.refreshTokenExpires ||
+      user.refreshTokenExpires <
+        new Date()
+    ) {
+      user.refreshToken = null;
+
+      user.refreshTokenExpires = null;
+
+      await user.save();
+
+      throw new UnauthorizedException(
+        "Refresh token expired",
+      );
+    }
+
+    // =================================================
+    // CHECK ROLE
+    // =================================================
+
+    const role = user.role as any;
+
+    if (!role) {
+      throw new UnauthorizedException(
+        "User does not have a valid role",
+      );
+    }
+
+    if (
+      !role._id ||
+      !role.name
+    ) {
+      throw new UnauthorizedException(
+        "User does not have a valid role",
+      );
+    }
+
+    // =================================================
+    // GET ROLE PERMISSIONS
+    // =================================================
+
+    const rolePermissions =
+      await this.rolePermissionsService
+        .getPermissionsByRole(
+          role._id.toString(),
+        );
+
+    const permissions =
+      rolePermissions
+        .filter(
+          (rp: any) =>
+            rp.permission,
+        )
+        .map(
+          (rp: any) =>
+            rp.permission.name,
+        );
+
+    // =================================================
+    // CREATE NEW ACCESS TOKEN
+    // =================================================
+
+    const payload = {
+      id: user._id.toString(),
+
+      email: user.email,
+
+      roleId:
+        role._id.toString(),
+
+      role: role.name,
+    };
+
+    const newAccessToken =
+      this.jwtService.sign(
+        payload,
+        {
+          expiresIn: "15m",
+        },
+      );
+
+    // =================================================
+    // CREATE NEW REFRESH TOKEN
+    // =================================================
+
+    const newRefreshToken =
+      crypto
+        .randomBytes(64)
+        .toString("hex");
+
+    const newRefreshTokenExpires =
+      new Date(
+        Date.now() +
+          7 * 24 * 60 * 60 * 1000,
+      );
+
+    // Replace old refresh token
+    user.refreshToken =
+      newRefreshToken;
+
+    user.refreshTokenExpires =
+      newRefreshTokenExpires;
+
+    await user.save();
+
+    // =================================================
+    // RETURN NEW TOKENS
+    // =================================================
+
+    return {
+      access_token:
+        newAccessToken,
+
+      refresh_token:
+        newRefreshToken,
+
+      user: {
+        id: user._id.toString(),
+
+        username:
+          user.username,
+
+        email:
+          user.email,
+
+        role:
+          role.name,
+
+        permissions,
+      },
+    };
+  }
+
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
+  async logout(
+    userId: string,
+  ) {
+    const user =
+      await this.usersService.findById(
+        userId,
+      );
+
+    if (!user) {
+      throw new NotFoundException(
+        "User not found",
+      );
+    }
+
+    // Remove refresh token
+    user.refreshToken = null;
+
+    user.refreshTokenExpires = null;
+
+    await user.save();
+
+    return {
+      message:
+        "Logout successful",
+    };
+  }
+
+  // =====================================================
   // FORGOT PASSWORD
-  
+  // =====================================================
 
   async forgotPassword(
     dto: ForgotPasswordDto,
@@ -282,8 +510,10 @@ export class AuthService {
     };
   }
 
+  // =====================================================
   // RESET PASSWORD
-  
+  // =====================================================
+
   async resetPassword(
     token: string,
     password: string,
