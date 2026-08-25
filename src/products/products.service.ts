@@ -47,25 +47,29 @@ export class ProductsService {
     }).limit(5);
   }
   async getProductsByCategory() {
-  const products = await this.productModel.find().lean();
+  const products =
+    await this.productModel.find().lean();
 
   const grouped: Record<string, any[]> = {};
 
   for (const product of products) {
-    const categoryName = product.category?.trim();
+    const originalCategory =
+      product.category?.trim();
 
-    if (!categoryName) {
+    if (!originalCategory) {
       continue;
     }
 
-    if (!grouped[categoryName]) {
-      grouped[categoryName] = [];
+    const categoryKey =
+      originalCategory.toLowerCase();
+
+    if (!grouped[categoryKey]) {
+      grouped[categoryKey] = [];
     }
 
-    grouped[categoryName].push(product);
+    grouped[categoryKey].push(product);
   }
 
   return grouped;
 }
-  
 }
