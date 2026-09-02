@@ -1,83 +1,63 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Type } from "class-transformer";
 
-
 @Schema()
 export class OrderItem {
-
-  @Prop()
+  @Prop({ required: true })
   productId!: string;
 
-
-  @Prop()
+  @Prop({ required: true })
   name!: string;
 
-
-  @Prop()
+  @Prop({ required: true })
   price!: number;
 
-
-  @Prop()
+  @Prop({ default: "" })
   image!: string;
 
-
-  @Prop()
+  @Prop({ required: true, min: 1 })
   quantity!: number;
-
 }
-
 
 export const OrderItemSchema =
-SchemaFactory.createForClass(OrderItem);
+  SchemaFactory.createForClass(OrderItem);
 
 
-
-
-@Schema({ timestamps:true })
+@Schema({ timestamps: true })
 export class Order {
-
-
-  @Prop()
+  @Prop({ required: true })
   userId!: string;
 
-
-  @Prop()
+  @Prop({ required: true })
   customerName!: string;
 
-
-
   @Prop({
-    type:[OrderItemSchema],
-    default:[]
+    type: [OrderItemSchema],
+    default: [],
   })
-  @Type(()=>OrderItem)
+  @Type(() => OrderItem)
   items!: OrderItem[];
 
-
+  @Prop({
+    required: true,
+    default: 0,
+  })
+  total!: number;
 
   @Prop({
-    default:0
+    required: true,
+    default: "pending",
+    enum: [
+      "pending",
+      "confirmed",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ],
   })
-  total!:number;
-
-
-
-  @Prop({
-    default:"Pending",
-    enum:[
-      "Pending",
-      "Confirmed",
-      "Processing",
-      "Completed",
-      "Cancelled"
-    ]
-  })
-  status!:string;
-
-
+  status!: string;
 }
 
-
-
 export const OrderSchema =
-SchemaFactory.createForClass(Order);
+  SchemaFactory.createForClass(Order);
