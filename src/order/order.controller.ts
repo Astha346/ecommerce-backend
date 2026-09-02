@@ -1,46 +1,96 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete, } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Patch,
+  Delete,
+  Query,
+} from "@nestjs/common";
+
 import { OrderService } from "./order.service";
 
 @Controller("orders")
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(
+    private readonly orderService: OrderService,
+  ) {}
+
+  // ==========================================
+  // UPDATE ORDER STATUS
+  // ==========================================
 
   @Patch(":id/status")
-updateStatus(
-  @Param("id") id: string,
-  @Body("status") status: string,
-) {
-  return this.orderService.updateStatus(
-    id,
-    status,
-  );
-  
-}
- @Delete(":id")
-deleteOrder(@Param("id") id: string) {
-  return this.orderService.deleteOrder(id);
-}
+  updateStatus(
+    @Param("id") id: string,
+    @Body("status") status: string,
+  ) {
+    return this.orderService.updateStatus(
+      id,
+      status,
+    );
+  }
 
-  // create order direct
+  // ==========================================
+  // DELETE ORDER
+  // ==========================================
+
+  @Delete(":id")
+  deleteOrder(@Param("id") id: string) {
+    return this.orderService.deleteOrder(id);
+  }
+
+  // ==========================================
+  // CREATE ORDER
+  // ==========================================
+
   @Post("create")
   create(@Body() body: any) {
     return this.orderService.create(body);
   }
 
-  // ✅ MAIN FIX: create order from cart
+  // ==========================================
+  // CREATE ORDER FROM CART
+  // ==========================================
+
   @Post("create-from-cart")
-  createFromCart(@Body() body: { userId: string }) {
-    return this.orderService.createFromCart(body.userId);
+  createFromCart(
+    @Body() body: { userId: string },
+  ) {
+    return this.orderService.createFromCart(
+      body.userId,
+    );
   }
 
-  // get orders by user
-  @Get(":userId")
-  findAll(@Param("userId") userId: string) {
-    return this.orderService.findAll(userId);
-  }
+  // ==========================================
+  // GET ALL ORDERS
+  // PAGINATION + SEARCH + STATUS
+  // ==========================================
 
   @Get()
-  getallOrders(){
-    return this.orderService.getAllOrders();
+  getAllOrders(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("search") search?: string,
+    @Query("status") status?: string,
+  ) {
+    return this.orderService.getAllOrders(
+      Number(page) || 1,
+      Number(limit) || 10,
+      search || "",
+      status || "",
+    );
+  }
+
+  // ==========================================
+  // GET ORDERS BY USER
+  // ==========================================
+
+  @Get(":userId")
+  findAll(
+    @Param("userId") userId: string,
+  ) {
+    return this.orderService.findAll(userId);
   }
 }
