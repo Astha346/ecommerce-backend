@@ -1,10 +1,11 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 
 import { Order } from "./order.schema";
 import { Cart } from "../cart/cart.schema";
@@ -14,44 +15,45 @@ import { User } from "../users/user.schema";
 export class OrderService {
   constructor(
     @InjectModel(Order.name)
-    private orderModel: Model<Order>,
+    private readonly orderModel: Model<Order>,
 
     @InjectModel(Cart.name)
-    private cartModel: Model<Cart>,
+    private readonly cartModel: Model<Cart>,
 
     @InjectModel(User.name)
-    private userModel: Model<User>,
+    private readonly userModel: Model<User>,
   ) {}
 
-  // Manual order create
-  create(data: any) {
+  // =========================================================
+  // CREATE ORDER
+  // =========================================================
+
+  async create(data: any) {
     return this.orderModel.create(data);
   }
 
-  // Get orders by user
-  findAll(userId: string) {
+  // =========================================================
+  // GET ORDERS FOR USER
+  // =========================================================
+
+  async findAll(userId: string) {
     return this.orderModel
       .find({ userId })
       .sort({ createdAt: -1 });
   }
 
-  // Create order from cart
+  // =========================================================
+  // CREATE ORDER FROM CART
+  // =========================================================
+
   async createFromCart(userId: string) {
-    console.log("userId =", userId);
-
     const user = await this.userModel.findById(userId);
-
-    console.log("user =", user);
 
     if (!user) {
       throw new NotFoundException("User not found");
     }
 
-    const cartItems = await this.cartModel.find({
-      userId,
-    });
-
-    console.log("cartItems =", cartItems);
+    const cartItems = await this.cartModel.find({ userId });
 
     if (!cartItems.length) {
       return {
@@ -60,104 +62,222 @@ export class OrderService {
     }
 
     const total = cartItems.reduce(
-      (sum, item: any) =>
-        sum + item.price * item.quantity,
+      (sum: number, item: any) =>
+        sum +
+        Number(item.price) * Number(item.quantity),
       0,
     );
 
     const order = await this.orderModel.create({
       userId,
-
       customerName: user.username,
 
       items: cartItems.map((item: any) => ({
         productId: item.productId,
         name: item.name,
-        price: item.price,
-        image: item.image,
-        quantity: item.quantity,
+        price: Number(item.price),
+        image: item.image || "",
+        quantity: Number(item.quantity),
       })),
 
       total,
-
       status: "pending",
+
+      returnRefundStatus: "none",
+      returnItemIds: [],
+      returnReason: "",
+      customerNote: "",
+      refundMethod: "",
+      refundAmount: 0,
+      refundReviewNote: "",
     });
 
     return order;
   }
 
-  // ==========================================
-  // GET ALL ORDERS WITH PAGINATION
-  // SEARCH + STATUS FILTER
-  // ==========================================
+  // =========================================================
+  // GET ALL ORDERS
+  // PAGINATION + SEARCH + STATUS
+  // CUSTOMER DETAILS
+  // =========================================================
 
   async getAllOrders(
     page: number = 1,
-    limit: number = 10,
+    limit: number = 5,
     search: string = "",
     status: string = "",
   ) {
-    // Make sure page and limit are valid
     page = Math.max(Number(page) || 1, 1);
-    limit = Math.max(Number(limit) || 10, 1);
 
-    // Prevent extremely large requests
+    limit = Math.max(Number(limit) || 5, 1);
+
     limit = Math.min(limit, 100);
 
     const skip = (page - 1) * limit;
 
-    // Build MongoDB filter
     const filter: any = {};
 
-    // Search by order number/customer name/user ID
-    if (search) {
+    // =======================================================
+    // SEARCH
+    // =======================================================
+
+    const cleanSearch = search.trim();
+
+    if (cleanSearch) {
       filter.$or = [
         {
           customerName: {
-            $regex: search,
+            $regex: cleanSearch,
             $options: "i",
           },
         },
         {
           userId: {
-            $regex: search,
+            $regex: cleanSearch,
+            $options: "i",
+          },
+        },
+        {
+          orderNumber: {
+            $regex: cleanSearch,
             $options: "i",
           },
         },
       ];
     }
 
-    // Filter by status
-    if (status) {
-      filter.status = status.toLowerCase();
+    // =======================================================
+    // STATUS FILTER
+    // =======================================================
+
+    const cleanStatus = status
+      .toLowerCase()
+      .trim();
+
+    if (
+      cleanStatus &&
+      cleanStatus !== "all"
+    ) {
+      filter.status = cleanStatus;
     }
 
-    // Get orders
-    const orders = await this.orderModel
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // =======================================================
+    // GET ORDERS + TOTAL
+    // =======================================================
 
-    // Count matching orders
-    const total = await this.orderModel.countDocuments(
-      filter,
-    );
+    const [orders, total] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
 
-    // Calculate total pages
-    const totalPages = Math.ceil(total / limit);
+      this.orderModel.countDocuments(filter),
+    ]);
+
+    // =======================================================
+    // GET USER IDS
+    // =======================================================
+
+    const userIds = [
+      ...new Set(
+        orders
+          .map((order: any) =>
+            order.userId?.toString(),
+          )
+          .filter((id: any) => {
+            return (
+              id &&
+              Types.ObjectId.isValid(id)
+            );
+          }),
+      ),
+    ];
+
+    // =======================================================
+    // GET USERS
+    // =======================================================
+
+    let users: any[] = [];
+
+    if (userIds.length > 0) {
+      users = await this.userModel
+        .find({
+          _id: {
+            $in: userIds,
+          },
+        })
+        .select("username email")
+        .lean();
+    }
+
+    // =======================================================
+    // USER MAP
+    // =======================================================
+
+    const userMap = new Map<string, any>();
+
+    users.forEach((user: any) => {
+      userMap.set(
+        user._id.toString(),
+        user,
+      );
+    });
+
+    // =======================================================
+    // ADD CUSTOMER INFORMATION
+    // =======================================================
+
+    const ordersWithCustomer =
+      orders.map((order: any) => {
+        const user = userMap.get(
+          order.userId?.toString(),
+        );
+
+        return {
+          ...order,
+
+          customer: {
+            name:
+              user?.username ||
+              order.customerName ||
+              "Unknown Customer",
+
+            email:
+              user?.email ||
+              "-",
+
+            phone: "",
+          },
+        };
+      });
+
+    // =======================================================
+    // PAGINATION
+    // =======================================================
+
+    const totalPages =
+      Math.ceil(total / limit);
+
+    const safeTotalPages =
+      Math.max(totalPages, 1);
+
+    // =======================================================
+    // RESPONSE
+    // =======================================================
 
     return {
-      orders,
+      orders: ordersWithCustomer,
 
       pagination: {
         page,
         limit,
         total,
-        totalPages,
+        totalPages: safeTotalPages,
 
         hasNextPage:
-          page < totalPages,
+          page < safeTotalPages,
 
         hasPreviousPage:
           page > 1,
@@ -165,9 +285,9 @@ export class OrderService {
     };
   }
 
-  // ==========================================
-  // UPDATE STATUS
-  // ==========================================
+  // =========================================================
+  // UPDATE ORDER STATUS
+  // =========================================================
 
   async updateStatus(
     id: string,
@@ -182,17 +302,27 @@ export class OrderService {
       "cancelled",
     ];
 
-    status = status.toLowerCase();
+    status = status
+      .toLowerCase()
+      .trim();
 
-    if (!allowedStatuses.includes(status)) {
-      throw new Error("Invalid order status");
+    if (
+      !allowedStatuses.includes(status)
+    ) {
+      throw new BadRequestException(
+        "Invalid order status",
+      );
     }
 
     const order =
       await this.orderModel.findByIdAndUpdate(
         id,
-        { status },
-        { new: true },
+        {
+          status,
+        },
+        {
+          new: true,
+        },
       );
 
     if (!order) {
@@ -204,13 +334,21 @@ export class OrderService {
     return order;
   }
 
-  // ==========================================
-  // DELETE ORDER
-  // ==========================================
+  // =========================================================
+  // CANCEL ORDER
+  // =========================================================
 
-  async deleteOrder(id: string) {
+  async cancelOrder(id: string) {
     const order =
-      await this.orderModel.findByIdAndDelete(id);
+      await this.orderModel.findByIdAndUpdate(
+        id,
+        {
+          status: "cancelled",
+        },
+        {
+          new: true,
+        },
+      );
 
     if (!order) {
       throw new NotFoundException(
@@ -219,7 +357,341 @@ export class OrderService {
     }
 
     return {
-      message: "Order deleted successfully",
+      message:
+        "Order cancelled successfully",
+      order,
+    };
+  }
+
+  // =========================================================
+  // REQUEST RETURN / REFUND
+  // =========================================================
+
+  async requestReturnRefund(
+    id: string,
+    data: {
+      itemIds: string[];
+      customerNote?: string;
+      reason?: string;
+      refundMethod?: string;
+      refundAmount?: number;
+    },
+  ) {
+    const order =
+      await this.orderModel.findById(id);
+
+    if (!order) {
+      throw new NotFoundException(
+        "Order not found",
+      );
+    }
+
+    if (
+      order.status !== "delivered"
+    ) {
+      throw new BadRequestException(
+        "Only delivered orders can be returned or refunded",
+      );
+    }
+
+    if (
+      order.returnRefundStatus === "requested" ||
+      order.returnRefundStatus === "approved"
+    ) {
+      throw new BadRequestException(
+        "A return/refund request already exists for this order",
+      );
+    }
+
+    if (
+      !Array.isArray(data.itemIds) ||
+      data.itemIds.length === 0
+    ) {
+      throw new BadRequestException(
+        "At least one item must be selected",
+      );
+    }
+
+    const uniqueItemIds = [
+      ...new Set(data.itemIds),
+    ];
+
+    const orderProductIds =
+      order.items.map(
+        (item) => item.productId,
+      );
+
+    const invalidItemIds =
+      uniqueItemIds.filter(
+        (itemId) =>
+          !orderProductIds.includes(
+            itemId,
+          ),
+      );
+
+    if (
+      invalidItemIds.length > 0
+    ) {
+      throw new BadRequestException(
+        "One or more selected items do not belong to this order",
+      );
+    }
+
+    const reason =
+      data.reason?.trim() || "";
+
+    const customerNote =
+      data.customerNote?.trim() || "";
+
+    if (!reason && !customerNote) {
+      throw new BadRequestException(
+        "Return/refund reason or customer note is required",
+      );
+    }
+
+    const allowedRefundMethods = [
+      "original",
+      "esewa",
+      "khalti",
+      "bank",
+      "cash",
+    ];
+
+    const refundMethod =
+      data.refundMethod
+        ?.toLowerCase()
+        .trim() || "";
+
+    if (
+      refundMethod &&
+      !allowedRefundMethods.includes(
+        refundMethod,
+      )
+    ) {
+      throw new BadRequestException(
+        "Invalid refund method",
+      );
+    }
+
+    const refundAmount =
+      data.refundAmount !== undefined
+        ? Number(data.refundAmount)
+        : Number(order.total);
+
+    if (
+      Number.isNaN(refundAmount) ||
+      refundAmount < 0 ||
+      refundAmount > order.total
+    ) {
+      throw new BadRequestException(
+        "Invalid refund amount",
+      );
+    }
+
+    order.returnRefundStatus =
+      "requested";
+
+    order.returnItemIds =
+      uniqueItemIds;
+
+    order.returnReason =
+      reason || customerNote;
+
+    order.customerNote =
+      customerNote;
+
+    order.refundMethod =
+      refundMethod;
+
+    order.refundAmount =
+      refundAmount;
+
+    order.refundReviewNote = "";
+
+    order.returnRequestedAt =
+      new Date();
+
+    order.returnReviewedAt =
+      undefined;
+
+    order.refundedAt =
+      undefined;
+
+    await order.save();
+
+    return {
+      message:
+        "Return/refund request submitted successfully",
+      order,
+    };
+  }
+
+  // =========================================================
+  // REVIEW RETURN / REFUND
+  // =========================================================
+
+  async reviewReturnRefund(
+    id: string,
+    data: {
+      status:
+        | "approved"
+        | "rejected"
+        | "refunded";
+
+      reviewNote?: string;
+
+      refundAmount?: number;
+    },
+  ) {
+    const order =
+      await this.orderModel.findById(id);
+
+    if (!order) {
+      throw new NotFoundException(
+        "Order not found",
+      );
+    }
+
+    const allowedStatuses = [
+      "approved",
+      "rejected",
+      "refunded",
+    ];
+
+    if (
+      !allowedStatuses.includes(
+        data.status,
+      )
+    ) {
+      throw new BadRequestException(
+        "Invalid return/refund review status",
+      );
+    }
+
+    if (
+      order.returnRefundStatus ===
+      "none"
+    ) {
+      throw new BadRequestException(
+        "No return/refund request exists for this order",
+      );
+    }
+
+    if (
+      data.status === "approved" &&
+      order.returnRefundStatus !==
+        "requested"
+    ) {
+      throw new BadRequestException(
+        "Only requested return/refund can be approved",
+      );
+    }
+
+    if (
+      data.status === "rejected" &&
+      order.returnRefundStatus !==
+        "requested"
+    ) {
+      throw new BadRequestException(
+        "Only requested return/refund can be rejected",
+      );
+    }
+
+    if (
+      data.status === "refunded" &&
+      order.returnRefundStatus !==
+        "approved"
+    ) {
+      throw new BadRequestException(
+        "Return/refund must be approved before it can be refunded",
+      );
+    }
+
+    if (
+      data.refundAmount !== undefined
+    ) {
+      const amount = Number(
+        data.refundAmount,
+      );
+
+      if (
+        Number.isNaN(amount) ||
+        amount < 0 ||
+        amount > order.total
+      ) {
+        throw new BadRequestException(
+          "Invalid refund amount",
+        );
+      }
+
+      order.refundAmount =
+        amount;
+    }
+
+    order.returnRefundStatus =
+      data.status;
+
+    order.refundReviewNote =
+      data.reviewNote?.trim() || "";
+
+    order.returnReviewedAt =
+      new Date();
+
+    if (
+      data.status === "refunded"
+    ) {
+      order.refundedAt =
+        new Date();
+    }
+
+    await order.save();
+
+    return {
+      message: `Return/refund ${data.status} successfully`,
+      order,
+    };
+  }
+
+  // =========================================================
+  // GET RETURN / REFUND REQUESTS
+  // =========================================================
+
+  async getReturnRefundRequests() {
+    return this.orderModel
+      .find({
+        returnRefundStatus: {
+          $in: [
+            "requested",
+            "approved",
+            "rejected",
+            "refunded",
+          ],
+        },
+      })
+      .sort({
+        returnRequestedAt: -1,
+      });
+  }
+
+  // =========================================================
+  // DELETE ORDER
+  // =========================================================
+
+  async deleteOrder(id: string) {
+    const order =
+      await this.orderModel.findByIdAndDelete(
+        id,
+      );
+
+    if (!order) {
+      throw new NotFoundException(
+        "Order not found",
+      );
+    }
+
+    return {
+      message:
+        "Order deleted successfully",
     };
   }
 }
