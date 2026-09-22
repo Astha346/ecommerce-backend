@@ -2,14 +2,15 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
+  Param,
 } from "@nestjs/common";
 
 import { PermissionsService } from "./permissions.service";
 
 @Controller("permissions")
 export class PermissionsController {
-
   constructor(
     private readonly permissionsService: PermissionsService,
   ) {}
@@ -22,5 +23,13 @@ export class PermissionsController {
   @Get()
   findAll() {
     return this.permissionsService.findAll();
+  }
+
+  @Patch(":id")
+  update(
+    @Param("id") id: string,
+    @Body() body: any,
+  ) {
+    return this.permissionsService.update(id, body);
   }
 }

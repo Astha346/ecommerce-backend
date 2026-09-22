@@ -21,4 +21,12 @@ export class PermissionsService {
   findAll() {
     return this.permissionModel.find();
   }
+
+  update(id: string, data: any) {
+    return this.permissionModel.findByIdAndUpdate(
+      id,
+      data,
+      { new: true },
+    );
+  }
 }

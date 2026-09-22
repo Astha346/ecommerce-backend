@@ -30,4 +30,17 @@ export class RolesService {
   async findById(id: string) {
     return this.roleModel.findById(id);
   }
+
+  // Assign Permissions to Role
+  async updatePermissions(roleId: string, permissionIds: string[]) {
+    return this.roleModel.findByIdAndUpdate(
+      roleId,
+      {
+        permissions: permissionIds,
+      },
+      {
+        new: true,
+      },
+    );
+  }
 }
