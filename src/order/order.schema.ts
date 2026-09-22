@@ -1,3 +1,4 @@
+
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Type } from "class-transformer";
 
@@ -42,6 +43,25 @@ export class Order {
   @Prop({ required: true })
   customerName!: string;
 
+    /* =======================================================
+     DELIVERY LOCATION
+  ======================================================= */
+
+  @Prop({
+    default: "",
+  })
+  deliveryAddress!: string;
+
+  @Prop({
+    default: null,
+  })
+  latitude?: number;
+
+  @Prop({
+    default: null,
+  })
+  longitude?: number;
+
   /* =======================================================
      ITEMS
   ======================================================= */
@@ -80,6 +100,34 @@ export class Order {
     ],
   })
   status!: string;
+
+  /* =======================================================
+     PAYMENT METHOD
+  ======================================================= */
+
+  @Prop({
+    default: "cod",
+    enum: [
+      "cod",
+      "esewa",
+      "khalti",
+    ],
+  })
+  paymentMethod!: string;
+
+  /* =======================================================
+     PAYMENT STATUS
+  ======================================================= */
+
+  @Prop({
+    default: "pending",
+    enum: [
+      "paid",
+      "pending",
+      "failed",
+    ],
+  })
+  paymentStatus!: string;
 
   /* =======================================================
      RETURN / REFUND STATUS
@@ -189,3 +237,4 @@ export class Order {
 
 export const OrderSchema =
   SchemaFactory.createForClass(Order);
+

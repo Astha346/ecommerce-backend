@@ -1,3 +1,4 @@
+
 import {
   Controller,
   Post,
@@ -7,6 +8,7 @@ import {
   Patch,
   Delete,
   Query,
+  BadRequestException,
 } from "@nestjs/common";
 
 import { OrderService } from "./order.service";
@@ -177,6 +179,45 @@ export class OrderController {
   }
 
   /* =========================================================
+     UPDATE PAYMENT
+
+     PATCH:
+     /orders/:id/payment
+  ========================================================= */
+
+  @Patch(":id/payment")
+  updatePayment(
+    @Param("id") id: string,
+
+    @Body()
+    body: {
+      paymentMethod?:
+        | "cod"
+        | "esewa"
+        | "khalti";
+
+      paymentStatus?:
+        | "paid"
+        | "pending"
+        | "failed";
+    },
+  ) {
+    if (
+      body.paymentMethod === undefined &&
+      body.paymentStatus === undefined
+    ) {
+      throw new BadRequestException(
+        "Payment method or payment status is required",
+      );
+    }
+
+    return this.orderService.updatePayment(
+      id,
+      body,
+    );
+  }
+
+  /* =========================================================
      CANCEL ORDER
 
      PATCH:
@@ -208,3 +249,4 @@ export class OrderController {
     );
   }
 }
+

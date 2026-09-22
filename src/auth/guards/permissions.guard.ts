@@ -16,14 +16,12 @@ import { RolePermissionsService } from "../../role-permissions/role-permissions.
 export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-
     private readonly rolePermissionsService: RolePermissionsService,
   ) {}
 
   async canActivate(
     context: ExecutionContext,
   ): Promise<boolean> {
-
     // ==========================================
     // GET REQUIRED PERMISSION
     // ==========================================
@@ -37,7 +35,7 @@ export class PermissionsGuard implements CanActivate {
         ],
       );
 
-    // If endpoint does not require permission
+    // If no permission is required
     if (
       !requiredPermissions ||
       requiredPermissions.length === 0
@@ -53,11 +51,6 @@ export class PermissionsGuard implements CanActivate {
       context.switchToHttp().getRequest();
 
     const user = request.user;
-
-    console.log("================================");
-    console.log("PERMISSION CHECK");
-    console.log("JWT USER =", user);
-    console.log("REQUIRED =", requiredPermissions);
 
     if (!user) {
       throw new UnauthorizedException(
@@ -77,63 +70,47 @@ export class PermissionsGuard implements CanActivate {
       );
     }
 
-    console.log("ROLE ID =", roleId);
-
     // ==========================================
-    // GET ROLE PERMISSIONS FROM DATABASE
+    // GET ROLE PERMISSIONS
     // ==========================================
 
     const rolePermissions =
-      await this.rolePermissionsService
-        .getPermissionsByRole(roleId);
-
-    console.log(
-      "ROLE PERMISSIONS =",
-      rolePermissions,
-    );
+      await this.rolePermissionsService.getPermissionsByRole(
+        roleId,
+      );
 
     // ==========================================
-    // GET PERMISSION NAMES
+    // EXTRACT PERMISSION NAMES
     // ==========================================
 
     const userPermissions =
       rolePermissions
-        .filter(
-          (rp: any) =>
-            rp.permission,
-        )
-        .map(
-          (rp: any) =>
-            rp.permission.name,
-        );
+        .map((rolePermission: any) => {
+          // Normal populated permission
+          if (
+            rolePermission.permission &&
+            typeof rolePermission.permission === "object"
+          ) {
+            return rolePermission.permission.name;
+          }
 
-    console.log(
-      "USER PERMISSIONS =",
-      userPermissions,
-    );
+          return null;
+        })
+        .filter(Boolean);
 
     // ==========================================
-    // CHECK PERMISSION
+    // CHECK REQUIRED PERMISSION
     // ==========================================
 
     const hasPermission =
       requiredPermissions.some(
         (permission) =>
-          userPermissions.includes(
-            permission,
-          ),
+          userPermissions.includes(permission),
       );
-
-    console.log(
-      "HAS PERMISSION =",
-      hasPermission,
-    );
-
-    console.log("================================");
 
     if (!hasPermission) {
       throw new ForbiddenException(
-        "You do not have permission to perform this action",
+        `Missing permission: ${requiredPermissions.join(", ")}`,
       );
     }
 

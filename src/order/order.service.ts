@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   NotFoundException,
@@ -47,13 +48,19 @@ export class OrderService {
   // =========================================================
 
   async createFromCart(userId: string) {
-    const user = await this.userModel.findById(userId);
+    const user =
+      await this.userModel.findById(userId);
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new NotFoundException(
+        "User not found",
+      );
     }
 
-    const cartItems = await this.cartModel.find({ userId });
+    const cartItems =
+      await this.cartModel.find({
+        userId,
+      });
 
     if (!cartItems.length) {
       return {
@@ -64,33 +71,69 @@ export class OrderService {
     const total = cartItems.reduce(
       (sum: number, item: any) =>
         sum +
-        Number(item.price) * Number(item.quantity),
+        Number(item.price) *
+          Number(item.quantity),
       0,
     );
 
-    const order = await this.orderModel.create({
-      userId,
-      customerName: user.username,
+    const order =
+      await this.orderModel.create({
+        userId,
 
-      items: cartItems.map((item: any) => ({
-        productId: item.productId,
-        name: item.name,
-        price: Number(item.price),
-        image: item.image || "",
-        quantity: Number(item.quantity),
-      })),
+        customerName:
+          user.username,
 
-      total,
-      status: "pending",
+        items: cartItems.map(
+          (item: any) => ({
+            productId:
+              item.productId,
 
-      returnRefundStatus: "none",
-      returnItemIds: [],
-      returnReason: "",
-      customerNote: "",
-      refundMethod: "",
-      refundAmount: 0,
-      refundReviewNote: "",
-    });
+            name: item.name,
+
+            price: Number(
+              item.price,
+            ),
+
+            image:
+              item.image || "",
+
+            quantity: Number(
+              item.quantity,
+            ),
+          }),
+        ),
+
+        total,
+
+        status: "pending",
+
+        // =====================================================
+        // PAYMENT
+        // =====================================================
+
+        paymentMethod: "cod",
+
+        paymentStatus: "pending",
+
+        // =====================================================
+        // RETURN / REFUND
+        // =====================================================
+
+        returnRefundStatus:
+          "none",
+
+        returnItemIds: [],
+
+        returnReason: "",
+
+        customerNote: "",
+
+        refundMethod: "",
+
+        refundAmount: 0,
+
+        refundReviewNote: "",
+      });
 
     return order;
   }
@@ -107,13 +150,26 @@ export class OrderService {
     search: string = "",
     status: string = "",
   ) {
-    page = Math.max(Number(page) || 1, 1);
+    page =
+      Math.max(
+        Number(page) || 1,
+        1,
+      );
 
-    limit = Math.max(Number(limit) || 5, 1);
+    limit =
+      Math.max(
+        Number(limit) || 5,
+        1,
+      );
 
-    limit = Math.min(limit, 100);
+    limit =
+      Math.min(
+        limit,
+        100,
+      );
 
-    const skip = (page - 1) * limit;
+    const skip =
+      (page - 1) * limit;
 
     const filter: any = {};
 
@@ -121,25 +177,31 @@ export class OrderService {
     // SEARCH
     // =======================================================
 
-    const cleanSearch = search.trim();
+    const cleanSearch =
+      search.trim();
 
     if (cleanSearch) {
       filter.$or = [
         {
           customerName: {
-            $regex: cleanSearch,
+            $regex:
+              cleanSearch,
             $options: "i",
           },
         },
+
         {
           userId: {
-            $regex: cleanSearch,
+            $regex:
+              cleanSearch,
             $options: "i",
           },
         },
+
         {
           orderNumber: {
-            $regex: cleanSearch,
+            $regex:
+              cleanSearch,
             $options: "i",
           },
         },
@@ -150,30 +212,39 @@ export class OrderService {
     // STATUS FILTER
     // =======================================================
 
-    const cleanStatus = status
-      .toLowerCase()
-      .trim();
+    const cleanStatus =
+      status
+        .toLowerCase()
+        .trim();
 
     if (
       cleanStatus &&
       cleanStatus !== "all"
     ) {
-      filter.status = cleanStatus;
+      filter.status =
+        cleanStatus;
     }
 
     // =======================================================
     // GET ORDERS + TOTAL
     // =======================================================
 
-    const [orders, total] = await Promise.all([
+    const [
+      orders,
+      total,
+    ] = await Promise.all([
       this.orderModel
         .find(filter)
-        .sort({ createdAt: -1 })
+        .sort({
+          createdAt: -1,
+        })
         .skip(skip)
         .limit(limit)
         .lean(),
 
-      this.orderModel.countDocuments(filter),
+      this.orderModel.countDocuments(
+        filter,
+      ),
     ]);
 
     // =======================================================
@@ -183,15 +254,17 @@ export class OrderService {
     const userIds = [
       ...new Set(
         orders
-          .map((order: any) =>
-            order.userId?.toString(),
+          .map(
+            (order: any) =>
+              order.userId?.toString(),
           )
-          .filter((id: any) => {
-            return (
+          .filter(
+            (id: any) =>
               id &&
-              Types.ObjectId.isValid(id)
-            );
-          }),
+              Types.ObjectId.isValid(
+                id,
+              ),
+          ),
       ),
     ];
 
@@ -202,82 +275,105 @@ export class OrderService {
     let users: any[] = [];
 
     if (userIds.length > 0) {
-      users = await this.userModel
-        .find({
-          _id: {
-            $in: userIds,
-          },
-        })
-        .select("username email")
-        .lean();
+      users =
+        await this.userModel
+          .find({
+            _id: {
+              $in: userIds,
+            },
+          })
+          .select(
+            "username email",
+          )
+          .lean();
     }
 
     // =======================================================
     // USER MAP
     // =======================================================
 
-    const userMap = new Map<string, any>();
+    const userMap =
+      new Map<
+        string,
+        any
+      >();
 
-    users.forEach((user: any) => {
-      userMap.set(
-        user._id.toString(),
-        user,
-      );
-    });
+    users.forEach(
+      (user: any) => {
+        userMap.set(
+          user._id.toString(),
+          user,
+        );
+      },
+    );
 
     // =======================================================
     // ADD CUSTOMER INFORMATION
     // =======================================================
 
     const ordersWithCustomer =
-      orders.map((order: any) => {
-        const user = userMap.get(
-          order.userId?.toString(),
-        );
+      orders.map(
+        (order: any) => {
+          const user =
+            userMap.get(
+              order.userId?.toString(),
+            );
 
-        return {
-          ...order,
+          return {
+            ...order,
 
-          customer: {
-            name:
-              user?.username ||
-              order.customerName ||
-              "Unknown Customer",
+            customer: {
+              name:
+                user?.username ||
+                order.customerName ||
+                "Unknown Customer",
 
-            email:
-              user?.email ||
-              "-",
+              email:
+                user?.email ||
+                "-",
 
-            phone: "",
-          },
-        };
-      });
+              phone: "",
+            },
+          };
+        },
+      );
 
     // =======================================================
     // PAGINATION
     // =======================================================
 
     const totalPages =
-      Math.ceil(total / limit);
+      Math.ceil(
+        total / limit,
+      );
 
     const safeTotalPages =
-      Math.max(totalPages, 1);
+      Math.max(
+        totalPages,
+        1,
+      );
 
     // =======================================================
     // RESPONSE
     // =======================================================
 
     return {
-      orders: ordersWithCustomer,
+      orders:
+        ordersWithCustomer,
 
       pagination: {
         page,
+
         limit,
+
         total,
-        totalPages: safeTotalPages,
+
+        totalPages:
+          safeTotalPages,
 
         hasNextPage:
-          page < safeTotalPages,
+          page <
+          safeTotalPages,
 
         hasPreviousPage:
           page > 1,
@@ -302,12 +398,15 @@ export class OrderService {
       "cancelled",
     ];
 
-    status = status
-      .toLowerCase()
-      .trim();
+    status =
+      status
+        .toLowerCase()
+        .trim();
 
     if (
-      !allowedStatuses.includes(status)
+      !allowedStatuses.includes(
+        status,
+      )
     ) {
       throw new BadRequestException(
         "Invalid order status",
@@ -317,9 +416,11 @@ export class OrderService {
     const order =
       await this.orderModel.findByIdAndUpdate(
         id,
+
         {
           status,
         },
+
         {
           new: true,
         },
@@ -335,16 +436,174 @@ export class OrderService {
   }
 
   // =========================================================
-  // CANCEL ORDER
+  // UPDATE PAYMENT METHOD / PAYMENT STATUS
   // =========================================================
 
-  async cancelOrder(id: string) {
+  async updatePayment(
+    id: string,
+
+    data: {
+      paymentMethod?:
+        | "cod"
+        | "esewa"
+        | "khalti";
+
+      paymentStatus?:
+        | "paid"
+        | "pending"
+        | "failed";
+    },
+  ) {
+    // =======================================================
+    // VALID PAYMENT METHODS
+    // =======================================================
+
+    const allowedPaymentMethods = [
+      "cod",
+      "esewa",
+      "khalti",
+    ];
+
+    // =======================================================
+    // VALID PAYMENT STATUSES
+    // =======================================================
+
+    const allowedPaymentStatuses = [
+      "paid",
+      "pending",
+      "failed",
+    ];
+
+    // =======================================================
+    // UPDATE OBJECT
+    // =======================================================
+
+    const updateData: {
+      paymentMethod?:
+        | "cod"
+        | "esewa"
+        | "khalti";
+
+      paymentStatus?:
+        | "paid"
+        | "pending"
+        | "failed";
+    } = {};
+
+    // =======================================================
+    // VALIDATE PAYMENT METHOD
+    // =======================================================
+
+    if (
+      data.paymentMethod !==
+      undefined
+    ) {
+      if (
+        !allowedPaymentMethods.includes(
+          data.paymentMethod,
+        )
+      ) {
+        throw new BadRequestException(
+          "Invalid payment method",
+        );
+      }
+
+      updateData.paymentMethod =
+        data.paymentMethod;
+    }
+
+    // =======================================================
+    // VALIDATE PAYMENT STATUS
+    // =======================================================
+
+    if (
+      data.paymentStatus !==
+      undefined
+    ) {
+      if (
+        !allowedPaymentStatuses.includes(
+          data.paymentStatus,
+        )
+      ) {
+        throw new BadRequestException(
+          "Invalid payment status",
+        );
+      }
+
+      updateData.paymentStatus =
+        data.paymentStatus;
+    }
+
+    // =======================================================
+    // CHECK DATA
+    // =======================================================
+
+    if (
+      Object.keys(
+        updateData,
+      ).length === 0
+    ) {
+      throw new BadRequestException(
+        "Payment method or payment status is required",
+      );
+    }
+
+    // =======================================================
+    // UPDATE DATABASE
+    // =======================================================
+
     const order =
       await this.orderModel.findByIdAndUpdate(
         id,
+
         {
-          status: "cancelled",
+          $set: updateData,
         },
+
+        {
+          new: true,
+          runValidators: true,
+        },
+      );
+
+    // =======================================================
+    // ORDER NOT FOUND
+    // =======================================================
+
+    if (!order) {
+      throw new NotFoundException(
+        "Order not found",
+      );
+    }
+
+    // =======================================================
+    // RESPONSE
+    // =======================================================
+
+    return {
+      message:
+        "Payment updated successfully",
+
+      order,
+    };
+  }
+
+  // =========================================================
+  // CANCEL ORDER
+  // =========================================================
+
+  async cancelOrder(
+    id: string,
+  ) {
+    const order =
+      await this.orderModel.findByIdAndUpdate(
+        id,
+
+        {
+          status:
+            "cancelled",
+        },
+
         {
           new: true,
         },
@@ -359,6 +618,7 @@ export class OrderService {
     return {
       message:
         "Order cancelled successfully",
+
       order,
     };
   }
@@ -369,16 +629,23 @@ export class OrderService {
 
   async requestReturnRefund(
     id: string,
+
     data: {
       itemIds: string[];
+
       customerNote?: string;
+
       reason?: string;
+
       refundMethod?: string;
+
       refundAmount?: number;
     },
   ) {
     const order =
-      await this.orderModel.findById(id);
+      await this.orderModel.findById(
+        id,
+      );
 
     if (!order) {
       throw new NotFoundException(
@@ -386,26 +653,44 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // ONLY DELIVERED ORDERS
+    // =======================================================
+
     if (
-      order.status !== "delivered"
+      order.status !==
+      "delivered"
     ) {
       throw new BadRequestException(
         "Only delivered orders can be returned or refunded",
       );
     }
 
+    // =======================================================
+    // EXISTING REQUEST
+    // =======================================================
+
     if (
-      order.returnRefundStatus === "requested" ||
-      order.returnRefundStatus === "approved"
+      order.returnRefundStatus ===
+        "requested" ||
+      order.returnRefundStatus ===
+        "approved"
     ) {
       throw new BadRequestException(
         "A return/refund request already exists for this order",
       );
     }
 
+    // =======================================================
+    // VALID ITEMS
+    // =======================================================
+
     if (
-      !Array.isArray(data.itemIds) ||
-      data.itemIds.length === 0
+      !Array.isArray(
+        data.itemIds,
+      ) ||
+      data.itemIds.length ===
+        0
     ) {
       throw new BadRequestException(
         "At least one item must be selected",
@@ -413,12 +698,15 @@ export class OrderService {
     }
 
     const uniqueItemIds = [
-      ...new Set(data.itemIds),
+      ...new Set(
+        data.itemIds,
+      ),
     ];
 
     const orderProductIds =
       order.items.map(
-        (item) => item.productId,
+        (item) =>
+          item.productId,
       );
 
     const invalidItemIds =
@@ -430,24 +718,38 @@ export class OrderService {
       );
 
     if (
-      invalidItemIds.length > 0
+      invalidItemIds.length >
+      0
     ) {
       throw new BadRequestException(
         "One or more selected items do not belong to this order",
       );
     }
 
+    // =======================================================
+    // REASON
+    // =======================================================
+
     const reason =
-      data.reason?.trim() || "";
+      data.reason
+        ?.trim() || "";
 
     const customerNote =
-      data.customerNote?.trim() || "";
+      data.customerNote
+        ?.trim() || "";
 
-    if (!reason && !customerNote) {
+    if (
+      !reason &&
+      !customerNote
+    ) {
       throw new BadRequestException(
         "Return/refund reason or customer note is required",
       );
     }
+
+    // =======================================================
+    // REFUND METHOD
+    // =======================================================
 
     const allowedRefundMethods = [
       "original",
@@ -473,20 +775,36 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // REFUND AMOUNT
+    // =======================================================
+
     const refundAmount =
-      data.refundAmount !== undefined
-        ? Number(data.refundAmount)
-        : Number(order.total);
+      data.refundAmount !==
+      undefined
+        ? Number(
+            data.refundAmount,
+          )
+        : Number(
+            order.total,
+          );
 
     if (
-      Number.isNaN(refundAmount) ||
+      Number.isNaN(
+        refundAmount,
+      ) ||
       refundAmount < 0 ||
-      refundAmount > order.total
+      refundAmount >
+        order.total
     ) {
       throw new BadRequestException(
         "Invalid refund amount",
       );
     }
+
+    // =======================================================
+    // SAVE REQUEST
+    // =======================================================
 
     order.returnRefundStatus =
       "requested";
@@ -495,7 +813,8 @@ export class OrderService {
       uniqueItemIds;
 
     order.returnReason =
-      reason || customerNote;
+      reason ||
+      customerNote;
 
     order.customerNote =
       customerNote;
@@ -506,7 +825,8 @@ export class OrderService {
     order.refundAmount =
       refundAmount;
 
-    order.refundReviewNote = "";
+    order.refundReviewNote =
+      "";
 
     order.returnRequestedAt =
       new Date();
@@ -519,9 +839,14 @@ export class OrderService {
 
     await order.save();
 
+    // =======================================================
+    // RESPONSE
+    // =======================================================
+
     return {
       message:
         "Return/refund request submitted successfully",
+
       order,
     };
   }
@@ -532,6 +857,7 @@ export class OrderService {
 
   async reviewReturnRefund(
     id: string,
+
     data: {
       status:
         | "approved"
@@ -544,13 +870,19 @@ export class OrderService {
     },
   ) {
     const order =
-      await this.orderModel.findById(id);
+      await this.orderModel.findById(
+        id,
+      );
 
     if (!order) {
       throw new NotFoundException(
         "Order not found",
       );
     }
+
+    // =======================================================
+    // VALID REVIEW STATUSES
+    // =======================================================
 
     const allowedStatuses = [
       "approved",
@@ -568,6 +900,10 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // REQUEST EXISTS
+    // =======================================================
+
     if (
       order.returnRefundStatus ===
       "none"
@@ -577,8 +913,13 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // APPROVE
+    // =======================================================
+
     if (
-      data.status === "approved" &&
+      data.status ===
+        "approved" &&
       order.returnRefundStatus !==
         "requested"
     ) {
@@ -587,8 +928,13 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // REJECT
+    // =======================================================
+
     if (
-      data.status === "rejected" &&
+      data.status ===
+        "rejected" &&
       order.returnRefundStatus !==
         "requested"
     ) {
@@ -597,8 +943,13 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // REFUND
+    // =======================================================
+
     if (
-      data.status === "refunded" &&
+      data.status ===
+        "refunded" &&
       order.returnRefundStatus !==
         "approved"
     ) {
@@ -607,17 +958,26 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // UPDATE REFUND AMOUNT
+    // =======================================================
+
     if (
-      data.refundAmount !== undefined
+      data.refundAmount !==
+      undefined
     ) {
-      const amount = Number(
-        data.refundAmount,
-      );
+      const amount =
+        Number(
+          data.refundAmount,
+        );
 
       if (
-        Number.isNaN(amount) ||
+        Number.isNaN(
+          amount,
+        ) ||
         amount < 0 ||
-        amount > order.total
+        amount >
+          order.total
       ) {
         throw new BadRequestException(
           "Invalid refund amount",
@@ -628,17 +988,27 @@ export class OrderService {
         amount;
     }
 
+    // =======================================================
+    // UPDATE STATUS
+    // =======================================================
+
     order.returnRefundStatus =
       data.status;
 
     order.refundReviewNote =
-      data.reviewNote?.trim() || "";
+      data.reviewNote
+        ?.trim() || "";
 
     order.returnReviewedAt =
       new Date();
 
+    // =======================================================
+    // REFUNDED DATE
+    // =======================================================
+
     if (
-      data.status === "refunded"
+      data.status ===
+      "refunded"
     ) {
       order.refundedAt =
         new Date();
@@ -646,8 +1016,13 @@ export class OrderService {
 
     await order.save();
 
+    // =======================================================
+    // RESPONSE
+    // =======================================================
+
     return {
       message: `Return/refund ${data.status} successfully`,
+
       order,
     };
   }
@@ -669,7 +1044,8 @@ export class OrderService {
         },
       })
       .sort({
-        returnRequestedAt: -1,
+        returnRequestedAt:
+          -1,
       });
   }
 
@@ -677,7 +1053,9 @@ export class OrderService {
   // DELETE ORDER
   // =========================================================
 
-  async deleteOrder(id: string) {
+  async deleteOrder(
+    id: string,
+  ) {
     const order =
       await this.orderModel.findByIdAndDelete(
         id,
@@ -695,3 +1073,4 @@ export class OrderService {
     };
   }
 }
+
