@@ -47,7 +47,19 @@ export class OrderService {
   // CREATE ORDER FROM CART
   // =========================================================
 
-  async createFromCart(userId: string) {
+  async createFromCart(
+    userId: string,
+    data?: {
+      deliveryAddress?: string;
+      latitude?: number;
+      longitude?: number;
+      paymentMethod?: "cod" | "esewa" | "khalti";
+    },
+  ) {
+    // =======================================================
+    // FIND USER
+    // =======================================================
+
     const user =
       await this.userModel.findById(userId);
 
@@ -57,67 +69,195 @@ export class OrderService {
       );
     }
 
+    // =======================================================
+    // GET CART
+    // =======================================================
+
     const cartItems =
       await this.cartModel.find({
         userId,
       });
 
     if (!cartItems.length) {
-      return {
-        message: "Cart is empty",
-      };
+      throw new BadRequestException(
+        "Cart is empty",
+      );
     }
 
-    const total = cartItems.reduce(
-      (sum: number, item: any) =>
-        sum +
-        Number(item.price) *
-          Number(item.quantity),
-      0,
-    );
+    // =======================================================
+    // DELIVERY ADDRESS
+    // =======================================================
+
+    const deliveryAddress =
+      data?.deliveryAddress?.trim() || "";
+
+    if (!deliveryAddress) {
+      throw new BadRequestException(
+        "Delivery address is required",
+      );
+    }
+
+    // =======================================================
+    // PAYMENT METHOD
+    // =======================================================
+
+    const allowedPaymentMethods = [
+      "cod",
+      "esewa",
+      "khalti",
+    ];
+
+    const paymentMethod =
+      data?.paymentMethod || "cod";
+
+    if (
+      !allowedPaymentMethods.includes(
+        paymentMethod,
+      )
+    ) {
+      throw new BadRequestException(
+        "Invalid payment method",
+      );
+    }
+
+    // =======================================================
+    // LOCATION
+    // =======================================================
+
+    const latitude =
+      data?.latitude !== undefined
+        ? Number(data.latitude)
+        : undefined;
+
+    const longitude =
+      data?.longitude !== undefined
+        ? Number(data.longitude)
+        : undefined;
+
+    if (
+      latitude !== undefined &&
+      (
+        Number.isNaN(latitude) ||
+        latitude < -90 ||
+        latitude > 90
+      )
+    ) {
+      throw new BadRequestException(
+        "Invalid latitude",
+      );
+    }
+
+    if (
+      longitude !== undefined &&
+      (
+        Number.isNaN(longitude) ||
+        longitude < -180 ||
+        longitude > 180
+      )
+    ) {
+      throw new BadRequestException(
+        "Invalid longitude",
+      );
+    }
+
+    // =======================================================
+    // CALCULATE TOTAL
+    // =======================================================
+
+    const total =
+      cartItems.reduce(
+        (
+          sum: number,
+          item: any,
+        ) =>
+          sum +
+          Number(item.price) *
+            Number(item.quantity),
+        0,
+      );
+
+    // =======================================================
+    // PAYMENT STATUS
+    // =======================================================
+
+    const paymentStatus =
+      "pending";
+
+    // =======================================================
+    // CREATE ORDER
+    // =======================================================
 
     const order =
       await this.orderModel.create({
+        // ===================================================
+        // CUSTOMER
+        // ===================================================
+
         userId,
 
         customerName:
           user.username,
 
-        items: cartItems.map(
-          (item: any) => ({
-            productId:
-              item.productId,
+        // ===================================================
+        // DELIVERY
+        // ===================================================
 
-            name: item.name,
+        deliveryAddress,
 
-            price: Number(
-              item.price,
-            ),
+        latitude,
 
-            image:
-              item.image || "",
+        longitude,
 
-            quantity: Number(
-              item.quantity,
-            ),
-          }),
-        ),
+        // ===================================================
+        // ITEMS
+        // ===================================================
+
+        items:
+          cartItems.map(
+            (item: any) => ({
+              productId:
+                item.productId,
+
+              name:
+                item.name,
+
+              price:
+                Number(item.price),
+
+              image:
+                item.image || "",
+
+              quantity:
+                Number(
+                  item.quantity,
+                ),
+            }),
+          ),
+
+        // ===================================================
+        // TOTAL
+        // ===================================================
 
         total,
 
-        status: "pending",
+        // ===================================================
+        // ORDER STATUS
+        // ===================================================
 
-        // =====================================================
+        status:
+          "pending",
+
+        // ===================================================
         // PAYMENT
-        // =====================================================
+        // ===================================================
 
-        paymentMethod: "cod",
+        paymentMethod,
 
-        paymentStatus: "pending",
+        paymentStatus,
 
-        // =====================================================
+        // ===================================================
         // RETURN / REFUND
-        // =====================================================
+        // ===================================================
 
         returnRefundStatus:
           "none",
@@ -134,6 +274,10 @@ export class OrderService {
 
         refundReviewNote: "",
       });
+
+    // =======================================================
+    // RESPONSE
+    // =======================================================
 
     return order;
   }
@@ -416,11 +560,9 @@ export class OrderService {
     const order =
       await this.orderModel.findByIdAndUpdate(
         id,
-
         {
           status,
         },
-
         {
           new: true,
         },
@@ -441,7 +583,6 @@ export class OrderService {
 
   async updatePayment(
     id: string,
-
     data: {
       paymentMethod?:
         | "cod"
@@ -454,29 +595,17 @@ export class OrderService {
         | "failed";
     },
   ) {
-    // =======================================================
-    // VALID PAYMENT METHODS
-    // =======================================================
-
     const allowedPaymentMethods = [
       "cod",
       "esewa",
       "khalti",
     ];
 
-    // =======================================================
-    // VALID PAYMENT STATUSES
-    // =======================================================
-
     const allowedPaymentStatuses = [
       "paid",
       "pending",
       "failed",
     ];
-
-    // =======================================================
-    // UPDATE OBJECT
-    // =======================================================
 
     const updateData: {
       paymentMethod?:
@@ -491,7 +620,7 @@ export class OrderService {
     } = {};
 
     // =======================================================
-    // VALIDATE PAYMENT METHOD
+    // PAYMENT METHOD
     // =======================================================
 
     if (
@@ -513,7 +642,7 @@ export class OrderService {
     }
 
     // =======================================================
-    // VALIDATE PAYMENT STATUS
+    // PAYMENT STATUS
     // =======================================================
 
     if (
@@ -555,30 +684,20 @@ export class OrderService {
     const order =
       await this.orderModel.findByIdAndUpdate(
         id,
-
         {
           $set: updateData,
         },
-
         {
           new: true,
           runValidators: true,
         },
       );
 
-    // =======================================================
-    // ORDER NOT FOUND
-    // =======================================================
-
     if (!order) {
       throw new NotFoundException(
         "Order not found",
       );
     }
-
-    // =======================================================
-    // RESPONSE
-    // =======================================================
 
     return {
       message:
@@ -598,12 +717,10 @@ export class OrderService {
     const order =
       await this.orderModel.findByIdAndUpdate(
         id,
-
         {
           status:
             "cancelled",
         },
-
         {
           new: true,
         },
@@ -629,16 +746,11 @@ export class OrderService {
 
   async requestReturnRefund(
     id: string,
-
     data: {
       itemIds: string[];
-
       customerNote?: string;
-
       reason?: string;
-
       refundMethod?: string;
-
       refundAmount?: number;
     },
   ) {
@@ -653,10 +765,6 @@ export class OrderService {
       );
     }
 
-    // =======================================================
-    // ONLY DELIVERED ORDERS
-    // =======================================================
-
     if (
       order.status !==
       "delivered"
@@ -665,10 +773,6 @@ export class OrderService {
         "Only delivered orders can be returned or refunded",
       );
     }
-
-    // =======================================================
-    // EXISTING REQUEST
-    // =======================================================
 
     if (
       order.returnRefundStatus ===
@@ -680,10 +784,6 @@ export class OrderService {
         "A return/refund request already exists for this order",
       );
     }
-
-    // =======================================================
-    // VALID ITEMS
-    // =======================================================
 
     if (
       !Array.isArray(
@@ -726,10 +826,6 @@ export class OrderService {
       );
     }
 
-    // =======================================================
-    // REASON
-    // =======================================================
-
     const reason =
       data.reason
         ?.trim() || "";
@@ -746,10 +842,6 @@ export class OrderService {
         "Return/refund reason or customer note is required",
       );
     }
-
-    // =======================================================
-    // REFUND METHOD
-    // =======================================================
 
     const allowedRefundMethods = [
       "original",
@@ -775,10 +867,6 @@ export class OrderService {
       );
     }
 
-    // =======================================================
-    // REFUND AMOUNT
-    // =======================================================
-
     const refundAmount =
       data.refundAmount !==
       undefined
@@ -801,10 +889,6 @@ export class OrderService {
         "Invalid refund amount",
       );
     }
-
-    // =======================================================
-    // SAVE REQUEST
-    // =======================================================
 
     order.returnRefundStatus =
       "requested";
@@ -839,10 +923,6 @@ export class OrderService {
 
     await order.save();
 
-    // =======================================================
-    // RESPONSE
-    // =======================================================
-
     return {
       message:
         "Return/refund request submitted successfully",
@@ -857,7 +937,6 @@ export class OrderService {
 
   async reviewReturnRefund(
     id: string,
-
     data: {
       status:
         | "approved"
@@ -880,10 +959,6 @@ export class OrderService {
       );
     }
 
-    // =======================================================
-    // VALID REVIEW STATUSES
-    // =======================================================
-
     const allowedStatuses = [
       "approved",
       "rejected",
@@ -900,10 +975,6 @@ export class OrderService {
       );
     }
 
-    // =======================================================
-    // REQUEST EXISTS
-    // =======================================================
-
     if (
       order.returnRefundStatus ===
       "none"
@@ -912,10 +983,6 @@ export class OrderService {
         "No return/refund request exists for this order",
       );
     }
-
-    // =======================================================
-    // APPROVE
-    // =======================================================
 
     if (
       data.status ===
@@ -928,10 +995,6 @@ export class OrderService {
       );
     }
 
-    // =======================================================
-    // REJECT
-    // =======================================================
-
     if (
       data.status ===
         "rejected" &&
@@ -943,10 +1006,6 @@ export class OrderService {
       );
     }
 
-    // =======================================================
-    // REFUND
-    // =======================================================
-
     if (
       data.status ===
         "refunded" &&
@@ -957,10 +1016,6 @@ export class OrderService {
         "Return/refund must be approved before it can be refunded",
       );
     }
-
-    // =======================================================
-    // UPDATE REFUND AMOUNT
-    // =======================================================
 
     if (
       data.refundAmount !==
@@ -988,10 +1043,6 @@ export class OrderService {
         amount;
     }
 
-    // =======================================================
-    // UPDATE STATUS
-    // =======================================================
-
     order.returnRefundStatus =
       data.status;
 
@@ -1002,10 +1053,6 @@ export class OrderService {
     order.returnReviewedAt =
       new Date();
 
-    // =======================================================
-    // REFUNDED DATE
-    // =======================================================
-
     if (
       data.status ===
       "refunded"
@@ -1015,10 +1062,6 @@ export class OrderService {
     }
 
     await order.save();
-
-    // =======================================================
-    // RESPONSE
-    // =======================================================
 
     return {
       message: `Return/refund ${data.status} successfully`,
@@ -1073,4 +1116,5 @@ export class OrderService {
     };
   }
 }
+
 
