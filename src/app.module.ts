@@ -6,12 +6,13 @@ import { CartModule } from "./cart/cart.module";
 import { OrderModule } from "./order/order.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { ProductsModule } from "./products/products.module";
-import { AuthModule } from "./auth/auth.module"; 
-import { DashboardModule } from './dashboard/dashboard.module';
-import { RolesModule } from './roles/roles.module';
-import { PermissionsModule } from './permissions/permissions.module';
-import { RolePermissionsModule } from './role-permissions/role-permissions.module';
-import { CategoryModule } from './category/category.module';
+import { AuthModule } from "./auth/auth.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
+import { RolesModule } from "./roles/roles.module";
+import { PermissionsModule } from "./permissions/permissions.module";
+import { RolePermissionsModule } from "./role-permissions/role-permissions.module";
+import { CategoryModule } from "./category/category.module";
+import { PaymentModule } from "./payment/payment.module";
 
 @Module({
   imports: [
@@ -22,13 +23,14 @@ import { CategoryModule } from './category/category.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-      const uri = configService.get<string>("MONGO_URI");
-      console.log("Mongo URI:", uri);
+        const uri = configService.get<string>("MONGO_URI");
 
-     return {
-      uri,
-      };
-     },
+        console.log("Mongo URI:", uri);
+
+        return {
+          uri,
+        };
+      },
       inject: [ConfigService],
     }),
 
@@ -42,6 +44,7 @@ import { CategoryModule } from './category/category.module';
     PermissionsModule,
     RolePermissionsModule,
     CategoryModule,
+    PaymentModule,
   ],
 })
 export class AppModule {}

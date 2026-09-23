@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Post,
@@ -19,21 +18,18 @@ export class OrderController {
     private readonly orderService: OrderService,
   ) {}
 
-  /* =========================================================
-     RETURN / REFUND REQUESTS
-  ========================================================= */
+  // =========================================================
+  // RETURN / REFUND REQUESTS
+  // =========================================================
 
   @Get("return-refund")
   getReturnRefundRequests() {
     return this.orderService.getReturnRefundRequests();
   }
 
-  /* =========================================================
-     CREATE RETURN / REFUND REQUEST
-     
-     POST:
-     /orders/:id/return-refund
-  ========================================================= */
+  // =========================================================
+  // CREATE RETURN / REFUND REQUEST
+  // =========================================================
 
   @Post(":id/return-refund")
   requestReturnRefund(
@@ -54,12 +50,9 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     REVIEW RETURN / REFUND
-
-     PATCH:
-     /orders/:id/return-refund
-  ========================================================= */
+  // =========================================================
+  // REVIEW RETURN / REFUND
+  // =========================================================
 
   @Patch(":id/return-refund")
   reviewReturnRefund(
@@ -83,12 +76,9 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     CREATE ORDER
-
-     POST:
-     /orders/create
-  ========================================================= */
+  // =========================================================
+  // CREATE ORDER
+  // =========================================================
 
   @Post("create")
   createOrder(
@@ -99,28 +89,43 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     CREATE ORDER FROM CART
-
-     POST:
-     /orders/create-from-cart/:userId
-  ========================================================= */
+  // =========================================================
+  // CREATE ORDER FROM CART
+  //
+  // POST:
+  // /orders/create-from-cart/:userId
+  // =========================================================
 
   @Post("create-from-cart/:userId")
   createFromCart(
     @Param("userId") userId: string,
+
+    @Body()
+    body: {
+      deliveryAddress: string;
+
+      latitude?: number;
+
+      longitude?: number;
+
+      paymentMethod?:
+        | "cod"
+        | "esewa"
+        | "khalti";
+    },
   ) {
     return this.orderService.createFromCart(
       userId,
+      body,
     );
   }
 
-  /* =========================================================
-     GET ALL ORDERS
-
-     GET:
-     /orders?page=1&limit=5&search=&status=
-  ========================================================= */
+  // =========================================================
+  // GET ALL ORDERS
+  //
+  // GET:
+  // /orders?page=1&limit=5&search=&status=
+  // =========================================================
 
   @Get()
   getAllOrders(
@@ -140,12 +145,12 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     GET ORDERS BY USER
-
-     GET:
-     /orders/:userId
-  ========================================================= */
+  // =========================================================
+  // GET ORDERS BY USER
+  //
+  // GET:
+  // /orders/:userId
+  // =========================================================
 
   @Get(":userId")
   findAll(
@@ -156,12 +161,9 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     UPDATE ORDER STATUS
-
-     PATCH:
-     /orders/:id/status
-  ========================================================= */
+  // =========================================================
+  // UPDATE ORDER STATUS
+  // =========================================================
 
   @Patch(":id/status")
   updateStatus(
@@ -178,12 +180,12 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     UPDATE PAYMENT
-
-     PATCH:
-     /orders/:id/payment
-  ========================================================= */
+  // =========================================================
+  // UPDATE PAYMENT
+  //
+  // PATCH:
+  // /orders/:id/payment
+  // =========================================================
 
   @Patch(":id/payment")
   updatePayment(
@@ -203,8 +205,10 @@ export class OrderController {
     },
   ) {
     if (
-      body.paymentMethod === undefined &&
-      body.paymentStatus === undefined
+      body.paymentMethod ===
+        undefined &&
+      body.paymentStatus ===
+        undefined
     ) {
       throw new BadRequestException(
         "Payment method or payment status is required",
@@ -217,12 +221,9 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     CANCEL ORDER
-
-     PATCH:
-     /orders/:id/cancel
-  ========================================================= */
+  // =========================================================
+  // CANCEL ORDER
+  // =========================================================
 
   @Patch(":id/cancel")
   cancelOrder(
@@ -233,12 +234,9 @@ export class OrderController {
     );
   }
 
-  /* =========================================================
-     DELETE ORDER
-
-     DELETE:
-     /orders/:id
-  ========================================================= */
+  // =========================================================
+  // DELETE ORDER
+  // =========================================================
 
   @Delete(":id")
   deleteOrder(
@@ -249,4 +247,3 @@ export class OrderController {
     );
   }
 }
-
