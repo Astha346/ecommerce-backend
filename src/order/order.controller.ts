@@ -125,6 +125,10 @@ export class OrderController {
   //
   // GET:
   // /orders?page=1&limit=5&search=&status=
+  //
+  // Payment filters:
+  // /orders?paymentMethod=esewa
+  // /orders?paymentStatus=paid
   // =========================================================
 
   @Get()
@@ -136,12 +140,18 @@ export class OrderController {
     @Query("search") search?: string,
 
     @Query("status") status?: string,
+
+    @Query("paymentMethod") paymentMethod?: string,
+
+    @Query("paymentStatus") paymentStatus?: string,
   ) {
     return this.orderService.getAllOrders(
       Number(page) || 1,
       Number(limit) || 5,
       search || "",
       status || "",
+      paymentMethod || "",
+      paymentStatus || "",
     );
   }
 

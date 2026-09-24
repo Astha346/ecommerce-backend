@@ -6,13 +6,16 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 
 import { CategoryService } from "./category.service";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+
 import { PermissionsGuard } from "../auth/guards/permissions.guard";
+
 import { Permissions } from "../auth/decorators/permissions.decorator";
 
 @Controller("categories")
@@ -36,7 +39,7 @@ export class CategoryController {
   }
 
   // ==========================================
-  // GET ALL CATEGORIES
+  // GET CATEGORIES WITH PAGINATION
   // ==========================================
 
   @Get()
@@ -45,8 +48,18 @@ export class CategoryController {
     PermissionsGuard,
   )
   @Permissions("categories.view")
-  findAll() {
-    return this.categoryService.findAll();
+  findAll(
+    @Query("page") page: string,
+    @Query("limit") limit: string,
+    @Query("search") search: string,
+    @Query("status") status: string,
+  ) {
+    return this.categoryService.findAll(
+      Number(page) || 1,
+      Number(limit) || 5,
+      search || "",
+      status || "",
+    );
   }
 
   // ==========================================
