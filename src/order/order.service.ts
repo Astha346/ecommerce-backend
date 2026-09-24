@@ -293,6 +293,8 @@ export class OrderService {
     limit: number = 5,
     search: string = "",
     status: string = "",
+    paymentMethod: string = "",
+    paymentStatus: string = "",
   ) {
     page =
       Math.max(
@@ -368,6 +370,40 @@ export class OrderService {
       filter.status =
         cleanStatus;
     }
+
+    // =======================================================
+// PAYMENT METHOD FILTER
+// =======================================================
+
+const cleanPaymentMethod =
+  paymentMethod
+    .toLowerCase()
+    .trim();
+
+if (
+  cleanPaymentMethod &&
+  cleanPaymentMethod !== "all"
+) {
+  filter.paymentMethod =
+    cleanPaymentMethod;
+}
+
+// =======================================================
+// PAYMENT STATUS FILTER
+// =======================================================
+
+const cleanPaymentStatus =
+  paymentStatus
+    .toLowerCase()
+    .trim();
+
+if (
+  cleanPaymentStatus &&
+  cleanPaymentStatus !== "all"
+) {
+  filter.paymentStatus =
+    cleanPaymentStatus;
+}
 
     // =======================================================
     // GET ORDERS + TOTAL

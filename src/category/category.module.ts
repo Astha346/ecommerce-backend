@@ -6,6 +6,8 @@ import {
   CategorySchema,
 } from "./category.schema";
 
+import { Product, ProductSchema } from "../products/product.schema";
+
 import { CategoryController } from "./category.controller";
 import { CategoryService } from "./category.service";
 
@@ -18,6 +20,10 @@ import { PermissionsModule } from "../permissions/permissions.module";
       {
         name: Category.name,
         schema: CategorySchema,
+      },
+      {
+        name: Product.name,
+        schema: ProductSchema,
       },
     ]),
 

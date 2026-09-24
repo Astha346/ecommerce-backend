@@ -13,7 +13,9 @@ import {
 import { ProductsService } from "./products.service";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+
 import { PermissionsGuard } from "../auth/guards/permissions.guard";
+
 import { Permissions } from "../auth/decorators/permissions.decorator";
 
 @Controller("products")
@@ -32,8 +34,18 @@ export class ProductsController {
     PermissionsGuard,
   )
   @Permissions("products.view")
-  findAll() {
-    return this.productsService.findAll();
+  findAll(
+    @Query("page") page: string,
+    @Query("limit") limit: string,
+    @Query("search") search: string,
+    @Query("category") category: string,
+  ) {
+    return this.productsService.findAll(
+      Number(page) || 1,
+      Number(limit) || 5,
+      search || "",
+      category || "",
+    );
   }
 
   // ==========================================
