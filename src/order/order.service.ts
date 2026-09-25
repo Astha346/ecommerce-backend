@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   NotFoundException,
@@ -60,28 +59,22 @@ export class OrderService {
     // FIND USER
     // =======================================================
 
-    const user =
-      await this.userModel.findById(userId);
+    const user = await this.userModel.findById(userId);
 
     if (!user) {
-      throw new NotFoundException(
-        "User not found",
-      );
+      throw new NotFoundException("User not found");
     }
 
     // =======================================================
     // GET CART
     // =======================================================
 
-    const cartItems =
-      await this.cartModel.find({
-        userId,
-      });
+    const cartItems = await this.cartModel.find({
+      userId,
+    });
 
     if (!cartItems.length) {
-      throw new BadRequestException(
-        "Cart is empty",
-      );
+      throw new BadRequestException("Cart is empty");
     }
 
     // =======================================================
@@ -136,11 +129,9 @@ export class OrderService {
 
     if (
       latitude !== undefined &&
-      (
-        Number.isNaN(latitude) ||
+      (Number.isNaN(latitude) ||
         latitude < -90 ||
-        latitude > 90
-      )
+        latitude > 90)
     ) {
       throw new BadRequestException(
         "Invalid latitude",
@@ -149,11 +140,9 @@ export class OrderService {
 
     if (
       longitude !== undefined &&
-      (
-        Number.isNaN(longitude) ||
+      (Number.isNaN(longitude) ||
         longitude < -180 ||
-        longitude > 180
-      )
+        longitude > 180)
     ) {
       throw new BadRequestException(
         "Invalid longitude",
@@ -164,24 +153,22 @@ export class OrderService {
     // CALCULATE TOTAL
     // =======================================================
 
-    const total =
-      cartItems.reduce(
-        (
-          sum: number,
-          item: any,
-        ) =>
-          sum +
-          Number(item.price) *
-            Number(item.quantity),
-        0,
-      );
+    const total = cartItems.reduce(
+      (
+        sum: number,
+        item: any,
+      ) =>
+        sum +
+        Number(item.price) *
+          Number(item.quantity),
+      0,
+    );
 
     // =======================================================
     // PAYMENT STATUS
     // =======================================================
 
-    const paymentStatus =
-      "pending";
+    const paymentStatus = "pending";
 
     // =======================================================
     // CREATE ORDER
@@ -189,18 +176,10 @@ export class OrderService {
 
     const order =
       await this.orderModel.create({
-        // ===================================================
-        // CUSTOMER
-        // ===================================================
-
         userId,
 
         customerName:
           user.username,
-
-        // ===================================================
-        // DELIVERY
-        // ===================================================
 
         deliveryAddress,
 
@@ -208,59 +187,36 @@ export class OrderService {
 
         longitude,
 
-        // ===================================================
-        // ITEMS
-        // ===================================================
+        items: cartItems.map(
+          (item: any) => ({
+            productId:
+              item.productId,
 
-        items:
-          cartItems.map(
-            (item: any) => ({
-              productId:
-                item.productId,
+            name:
+              item.name,
 
-              name:
-                item.name,
+            price:
+              Number(item.price),
 
-              price:
-                Number(item.price),
+            image:
+              item.image || "",
 
-              image:
-                item.image || "",
-
-              quantity:
-                Number(
-                  item.quantity,
-                ),
-            }),
-          ),
-
-        // ===================================================
-        // TOTAL
-        // ===================================================
+            quantity:
+              Number(
+                item.quantity,
+              ),
+          }),
+        ),
 
         total,
 
-        // ===================================================
-        // ORDER STATUS
-        // ===================================================
-
-        status:
-          "pending",
-
-        // ===================================================
-        // PAYMENT
-        // ===================================================
+        status: "pending",
 
         paymentMethod,
 
         paymentStatus,
 
-        // ===================================================
-        // RETURN / REFUND
-        // ===================================================
-
-        returnRefundStatus:
-          "none",
+        returnRefundStatus: "none",
 
         returnItemIds: [],
 
@@ -275,17 +231,12 @@ export class OrderService {
         refundReviewNote: "",
       });
 
-    // =======================================================
-    // RESPONSE
-    // =======================================================
-
     return order;
   }
 
   // =========================================================
   // GET ALL ORDERS
-  // PAGINATION + SEARCH + STATUS
-  // CUSTOMER DETAILS
+  // PAGINATION + SEARCH + STATUS + PAYMENT + DATE
   // =========================================================
 
   async getAllOrders(
@@ -295,24 +246,27 @@ export class OrderService {
     status: string = "",
     paymentMethod: string = "",
     paymentStatus: string = "",
+    startDate: string = "",
+    endDate: string = "",
   ) {
-    page =
-      Math.max(
-        Number(page) || 1,
-        1,
-      );
+    // =======================================================
+    // PAGINATION
+    // =======================================================
 
-    limit =
-      Math.max(
-        Number(limit) || 5,
-        1,
-      );
+    page = Math.max(
+      Number(page) || 1,
+      1,
+    );
 
-    limit =
-      Math.min(
-        limit,
-        100,
-      );
+    limit = Math.max(
+      Number(limit) || 5,
+      1,
+    );
+
+    limit = Math.min(
+      limit,
+      100,
+    );
 
     const skip =
       (page - 1) * limit;
@@ -372,38 +326,99 @@ export class OrderService {
     }
 
     // =======================================================
-// PAYMENT METHOD FILTER
-// =======================================================
+    // PAYMENT METHOD FILTER
+    // =======================================================
 
-const cleanPaymentMethod =
-  paymentMethod
-    .toLowerCase()
-    .trim();
+    const cleanPaymentMethod =
+      paymentMethod
+        .toLowerCase()
+        .trim();
 
-if (
-  cleanPaymentMethod &&
-  cleanPaymentMethod !== "all"
-) {
-  filter.paymentMethod =
-    cleanPaymentMethod;
-}
+    if (
+      cleanPaymentMethod &&
+      cleanPaymentMethod !== "all"
+    ) {
+      filter.paymentMethod =
+        cleanPaymentMethod;
+    }
 
-// =======================================================
-// PAYMENT STATUS FILTER
-// =======================================================
+    // =======================================================
+    // PAYMENT STATUS FILTER
+    // =======================================================
 
-const cleanPaymentStatus =
-  paymentStatus
-    .toLowerCase()
-    .trim();
+    const cleanPaymentStatus =
+      paymentStatus
+        .toLowerCase()
+        .trim();
 
-if (
-  cleanPaymentStatus &&
-  cleanPaymentStatus !== "all"
-) {
-  filter.paymentStatus =
-    cleanPaymentStatus;
-}
+    if (
+      cleanPaymentStatus &&
+      cleanPaymentStatus !== "all"
+    ) {
+      filter.paymentStatus =
+        cleanPaymentStatus;
+    }
+
+    // =======================================================
+    // DATE RANGE FILTER
+    // =======================================================
+
+    if (
+      startDate ||
+      endDate
+    ) {
+      filter.createdAt = {};
+
+      // -----------------------------------------------------
+      // START DATE
+      // -----------------------------------------------------
+
+      if (startDate) {
+        const start =
+          new Date(startDate);
+
+        if (
+          !Number.isNaN(
+            start.getTime(),
+          )
+        ) {
+          start.setHours(
+            0,
+            0,
+            0,
+            0,
+          );
+
+          filter.createdAt.$gte =
+            start;
+        }
+      }
+
+      // -----------------------------------------------------
+      // END DATE
+      // -----------------------------------------------------
+
+      if (endDate) {
+        const end =
+          new Date(endDate);
+
+        if (
+          !Number.isNaN(
+            end.getTime(),
+          )
+        ) {
+          end.setHours(
+            23,
+            59,
+            59,
+            999,
+          );
+
+          filter.createdAt.$lte =
+            end;
+        }
+      }
+    }
 
     // =======================================================
     // GET ORDERS + TOTAL
@@ -454,7 +469,9 @@ if (
 
     let users: any[] = [];
 
-    if (userIds.length > 0) {
+    if (
+      userIds.length > 0
+    ) {
       users =
         await this.userModel
           .find({
@@ -721,7 +738,8 @@ if (
       await this.orderModel.findByIdAndUpdate(
         id,
         {
-          $set: updateData,
+          $set:
+            updateData,
         },
         {
           new: true,
@@ -1152,5 +1170,3 @@ if (
     };
   }
 }
-
-
