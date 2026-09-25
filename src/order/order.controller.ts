@@ -123,27 +123,36 @@ export class OrderController {
   // =========================================================
   // GET ALL ORDERS
   //
-  // GET:
-  // /orders?page=1&limit=5&search=&status=
+  // Supports:
+  // pagination
+  // search
+  // order status
+  // payment method
+  // payment status
+  // date from
+  // date to
   //
-  // Payment filters:
-  // /orders?paymentMethod=esewa
-  // /orders?paymentStatus=paid
+  // Example:
+  //
+  // /orders?page=1&limit=5
+  //
+  // /orders?startDate=2026-09-01&endDate=2026-09-25
   // =========================================================
 
   @Get()
-  getAllOrders(
-    @Query("page") page?: string,
-
-    @Query("limit") limit?: string,
-
+  async getAllOrders(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
     @Query("search") search?: string,
-
     @Query("status") status?: string,
-
-    @Query("paymentMethod") paymentMethod?: string,
-
-    @Query("paymentStatus") paymentStatus?: string,
+    @Query("paymentMethod")
+    paymentMethod?: string,
+    @Query("paymentStatus")
+    paymentStatus?: string,
+    @Query("startDate")
+    startDate?: string,
+    @Query("endDate")
+    endDate?: string,
   ) {
     return this.orderService.getAllOrders(
       Number(page) || 1,
@@ -152,6 +161,8 @@ export class OrderController {
       status || "",
       paymentMethod || "",
       paymentStatus || "",
+      startDate || "",
+      endDate || "",
     );
   }
 
