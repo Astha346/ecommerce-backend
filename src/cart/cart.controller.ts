@@ -1,11 +1,20 @@
-import { Controller, Get, Post, Body, Delete, Param } from "@nestjs/common";
+
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Delete,
+  Param,
+} from "@nestjs/common";
+
 import { CartService } from "./cart.service";
 
-@Controller("cart") // ✅ VERY IMPORTANT
+@Controller("cart")
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
-  @Post("add") // ✅ THIS MUST MATCH
+  @Post("add")
   add(@Body() body: any) {
     return this.cartService.addToCart(body);
   }
@@ -25,3 +34,4 @@ export class CartController {
     return this.cartService.clearCart(userId);
   }
 }
+
