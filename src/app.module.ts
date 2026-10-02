@@ -13,6 +13,7 @@ import { PermissionsModule } from "./permissions/permissions.module";
 import { RolePermissionsModule } from "./role-permissions/role-permissions.module";
 import { CategoryModule } from "./category/category.module";
 import { PaymentModule } from "./payment/payment.module";
+import { AddressModule } from './address/address.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PaymentModule } from "./payment/payment.module";
     RolePermissionsModule,
     CategoryModule,
     PaymentModule,
+    AddressModule,
   ],
 })
 export class AppModule {}
