@@ -14,6 +14,7 @@ import { RolePermissionsModule } from "./role-permissions/role-permissions.modul
 import { CategoryModule } from "./category/category.module";
 import { PaymentModule } from "./payment/payment.module";
 import { AddressModule } from './address/address.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { AddressModule } from './address/address.module';
     CategoryModule,
     PaymentModule,
     AddressModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}
