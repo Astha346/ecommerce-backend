@@ -10,6 +10,9 @@ import { Model, Types } from "mongoose";
 import { Order } from "./order.schema";
 import { Cart } from "../cart/cart.schema";
 import { User } from "../users/user.schema";
+import {
+  NotificationService,
+} from "../notifications/notification.service";
 
 @Injectable()
 export class OrderService {
@@ -22,6 +25,8 @@ export class OrderService {
 
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
+
+    private readonly notificationService: NotificationService,
   ) {}
 
   // =========================================================
@@ -40,6 +45,23 @@ export class OrderService {
     return this.orderModel
       .find({ userId })
       .sort({ createdAt: -1 });
+  }
+
+  // =========================================================
+  // GET SINGLE ORDER BY ID
+  // =========================================================
+
+  async findById(id: string) {
+    const order =
+      await this.orderModel.findById(id);
+
+    if (!order) {
+      throw new NotFoundException(
+        "Order not found",
+      );
+    }
+
+    return order;
   }
 
   // =========================================================
@@ -230,6 +252,17 @@ export class OrderService {
 
         refundReviewNote: "",
       });
+
+    // =======================================================
+    // CREATE REAL NOTIFICATIONS
+    // ADMIN + MANAGER + STAFF
+    // =======================================================
+
+    await this.notificationService.createOrderNotification(
+      order._id.toString(),
+      user.username,
+      total,
+    );
 
     return order;
   }
