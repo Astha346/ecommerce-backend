@@ -167,6 +167,22 @@ export class OrderController {
   }
 
   // =========================================================
+  // GET SINGLE ORDER BY ORDER ID
+  //
+  // GET:
+  // /orders/single/:id
+  //
+  // Used when clicking an admin notification.
+  // =========================================================
+
+  @Get("single/:id")
+  findById(
+    @Param("id") id: string,
+  ) {
+    return this.orderService.findById(id);
+  }
+
+  // =========================================================
   // GET ORDERS BY USER
   //
   // GET:
