@@ -1,3 +1,4 @@
+
 import { Injectable } from "@nestjs/common";
 
 import { InjectModel } from "@nestjs/mongoose";
@@ -93,6 +94,61 @@ export class NotificationService {
           `${customerName} placed a new order worth NPR ${total}`,
 
         type: "order",
+
+        read: false,
+
+        orderId: new Types.ObjectId(orderId),
+      }));
+
+    return this.notificationModel.insertMany(
+      notifications,
+    );
+  }
+
+  // NEW: RETURN / REFUND NOTIFICATION
+  async createReturnRefundNotification(
+    orderId: string,
+    customerName: string,
+  ) {
+    const users =
+      await this.userModel
+        .find()
+        .populate("role")
+        .lean();
+
+    const notificationUsers =
+      users.filter((user: any) => {
+        const role = user.role;
+
+        const roleName =
+          typeof role === "object" &&
+          role !== null
+            ? role.name
+            : "";
+
+        return [
+          "admin",
+          "manager",
+          "staff",
+        ].includes(
+          roleName?.toLowerCase(),
+        );
+      });
+
+    if (notificationUsers.length === 0) {
+      return [];
+    }
+
+    const notifications =
+      notificationUsers.map((user: any) => ({
+        userId: user._id,
+
+        title: "New Return / Refund Request",
+
+        message:
+          `${customerName} submitted a return/refund request for order ${orderId}.`,
+
+        type: "return",
 
         read: false,
 

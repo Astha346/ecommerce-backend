@@ -1010,6 +1010,11 @@ export class OrderService {
 
     await order.save();
 
+    await this.notificationService.createReturnRefundNotification(
+         order._id.toString(),
+          order.customerName || "A customer",
+          );
+
     return {
       message:
         "Return/refund request submitted successfully",
