@@ -3,6 +3,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Req,
   UseGuards,
   UnauthorizedException,
@@ -123,4 +124,34 @@ export class AuthController {
       dto.password,
     );
   }
+  
+  // ==========================================
+  // CHANGE PASSWORD
+  // ==========================================
+
+  @UseGuards(JwtAuthGuard)
+  @Patch("change-password")
+  changePassword(
+    @Req() req: any,
+    @Body()
+    body: {
+      currentPassword: string;
+      newPassword: string;
+    },
+  ) {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        "Authenticated user ID not found",
+      );
+    }
+
+    return this.authService.changePassword(
+      userId,
+      body.currentPassword,
+      body.newPassword,
+    );
+  }
+
 }

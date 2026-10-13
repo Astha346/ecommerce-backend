@@ -562,4 +562,73 @@ export class AuthService {
         "Password reset successful",
     };
   }
+  
+  // =====================================================
+  // CHANGE PASSWORD
+  // =====================================================
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    if (
+      !currentPassword ||
+      !newPassword
+    ) {
+      throw new BadRequestException(
+        "Current password and new password are required",
+      );
+    }
+
+    if (newPassword.length < 8) {
+      throw new BadRequestException(
+        "New password must be at least 8 characters long",
+      );
+    }
+
+    if (currentPassword === newPassword) {
+      throw new BadRequestException(
+        "New password must be different from current password",
+      );
+    }
+
+    const user =
+      await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException(
+        "User not found",
+      );
+    }
+
+    const isMatch =
+      await bcrypt.compare(
+        currentPassword,
+        user.password,
+      );
+
+    if (!isMatch) {
+      throw new UnauthorizedException(
+        "Current password is incorrect",
+      );
+    }
+
+    const hashedPassword =
+      await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+
+    // Invalidate the existing refresh token after
+    // a password change.
+    user.refreshToken = null;
+    user.refreshTokenExpires = null;
+
+    await user.save();
+
+    return {
+      message: "Password changed successfully. Please log in again.",
+    };
+  }
+
 }
