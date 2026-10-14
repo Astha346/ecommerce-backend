@@ -104,4 +104,21 @@ export class UsersService {
       })
       .exec();
   }
+
+  
+  // ==========================================
+  // FIND USER BY TWO-FACTOR CHALLENGE
+  // ==========================================
+
+  async findByTwoFactorChallenge(
+    challengeId: string,
+  ) {
+    return this.userModel
+      .findOne({
+        twoFactorChallengeId: challengeId,
+      })
+      .populate("role")
+      .exec();
+  }
+
 }

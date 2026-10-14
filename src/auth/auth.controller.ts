@@ -33,6 +33,42 @@ export class AuthController {
     );
   }
 
+  
+  // ==========================================
+  // VERIFY LOGIN OTP
+  // ==========================================
+
+  @Post("verify-otp")
+  verifyOtp(
+    @Body()
+    body: {
+      challengeId: string;
+      otp: string;
+    },
+  ) {
+    return this.authService.verifyOtp(
+      body.challengeId,
+      body.otp,
+    );
+  }
+
+  // ==========================================
+  // RESEND LOGIN OTP
+  // ==========================================
+
+  @Post("resend-otp")
+  resendOtp(
+    @Body()
+    body: {
+      challengeId: string;
+    },
+  ) {
+    return this.authService.resendOtp(
+      body.challengeId,
+    );
+  }
+
+
   // ==========================================
   // REGISTER
   // ==========================================

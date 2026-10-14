@@ -110,6 +110,35 @@ profileImage!: string;
     default: null,
   })
   resetPasswordExpires?: Date | null;
+
+    // =====================================================
+  // TWO-FACTOR AUTHENTICATION (OTP)
+  // =====================================================
+
+  @Prop({
+    type: String,
+    default: null,
+  })
+  twoFactorOtpHash?: string | null;
+
+  @Prop({
+    type: Date,
+    default: null,
+  })
+  twoFactorOtpExpires?: Date | null;
+
+  @Prop({
+    type: String,
+    default: null,
+  })
+  twoFactorChallengeId?: string | null;
+
+  @Prop({
+    type: Number,
+    default: 0,
+  })
+  twoFactorOtpAttempts?: number;
+  
 }
 
 export const UserSchema =
